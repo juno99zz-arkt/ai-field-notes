@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- AI 파고 리포트 양식. {{ }} 자리를 채우고, 안내 주석은 지운다. 이 파일 자체는 manifest에 올리지 않는다. -->
+<title>{{제목}} — AI 파고 No.{{NN}}</title>
+<meta name="description" content="{{한 줄 요약(120자 이내)}}">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Noto+Serif+KR:wght@600;900&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F6F4EF; --surface: #FFFFFF; --ink: #15191E; --muted: #5B636D; --line: #E2DED5;
+    --accent: #0B6E6E; --accent-soft: #DCEEEC; --warn: #9A5B00; --warn-soft: #F6EAD6; --risk: #A23B3B; --risk-soft: #F5E1E1;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0F1417; --surface: #161D21; --ink: #E9EEF0; --muted: #94A1A8; --line: #253036;
+      --accent: #5CC8C2; --accent-soft: #15302F; --warn: #E8B15A; --warn-soft: #2D2416; --risk: #EC8B8B; --risk-soft: #321C1E;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0F1417; --surface: #161D21; --ink: #E9EEF0; --muted: #94A1A8; --line: #253036;
+    --accent: #5CC8C2; --accent-soft: #15302F; --warn: #E8B15A; --warn-soft: #2D2416; --risk: #EC8B8B; --risk-soft: #321C1E;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: 'Noto Sans KR', -apple-system, sans-serif;
+         font-size: 17px; line-height: 1.8; word-break: keep-all; overflow-wrap: break-word; }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 0 16px; }
+  a { color: var(--accent); }
+  .nav { padding: 18px 0; font-size: 13px; }
+  .nav a { text-decoration: none; }
+  .kicker { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--accent); margin-top: 24px; }
+  h1 { font-family: 'Noto Serif KR', serif; font-weight: 900; font-size: clamp(28px, 5vw, 40px); line-height: 1.3; margin: 10px 0 14px; letter-spacing: -0.01em; }
+  .lede { font-size: 19px; color: var(--muted); margin: 0 0 18px; }
+  .info { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 13px; color: var(--muted); padding-bottom: 26px; border-bottom: 1px solid var(--line); }
+  .info b { color: var(--ink); font-weight: 500; }
+  h2 { font-family: 'Noto Serif KR', serif; font-weight: 600; font-size: 25px; margin: 54px 0 14px; line-height: 1.4; }
+  h2 .num { font-family: 'JetBrains Mono', monospace; font-size: 14px; color: var(--accent); display: block; margin-bottom: 2px; }
+  h3 { font-size: 18px; margin: 28px 0 8px; }
+  .tldr { background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 10px; padding: 18px 22px; margin-top: 30px; }
+  .tldr ol { margin: 6px 0 0; padding-left: 20px; }
+  .tldr li { margin: 4px 0; }
+  .analogy { background: var(--accent-soft); border-radius: 12px; padding: 20px 22px; }
+  .analogy .label { font-size: 13px; font-weight: 700; color: var(--accent); }
+  .steps { counter-reset: s; list-style: none; padding: 0; }
+  .steps li { counter-increment: s; position: relative; padding: 0 0 18px 46px; }
+  .steps li::before { content: counter(s); position: absolute; left: 0; top: 2px; width: 30px; height: 30px; border-radius: 50%;
+                      background: var(--accent); color: var(--bg); font-weight: 700; font-size: 14px; display: grid; place-items: center; }
+  figure { margin: 26px 0; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px; }
+  figure svg { width: 100%; height: auto; display: block; }
+  figcaption { font-size: 13px; color: var(--muted); margin-top: 10px; }
+  details { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 18px; margin: 12px 0; }
+  summary { cursor: pointer; font-weight: 700; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+  .stat { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+  .stat .v { font-family: 'JetBrains Mono', monospace; font-size: 24px; color: var(--accent); }
+  .stat .l { font-size: 13px; color: var(--muted); }
+  .stat .s { font-size: 11px; color: var(--muted); }
+  table { width: 100%; border-collapse: collapse; font-size: 15px; }
+  th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-size: 13px; color: var(--muted); font-weight: 500; }
+  .tag { display: inline-block; font-size: 12px; font-weight: 700; border-radius: 6px; padding: 1px 8px; white-space: nowrap; }
+  .tag.fact { background: var(--accent-soft); color: var(--accent); }
+  .tag.claim { background: var(--warn-soft); color: var(--warn); }
+  .tag.guess { background: var(--risk-soft); color: var(--risk); }
+  .scroll { overflow-x: auto; }
+  dl.glossary dt { font-weight: 700; margin-top: 12px; }
+  dl.glossary dd { margin: 2px 0 0; color: var(--muted); }
+  ol.src { font-size: 14px; padding-left: 20px; }
+  footer { margin: 60px 0 0; padding: 22px 0 48px; border-top: 1px solid var(--line); font-size: 13px; color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="nav"><a href="../">← AI 파고 아카이브</a></div>
+
+  <div class="kicker">AI 파고 No.{{NN}} · {{YYYY-MM-DD}} · {{분야}}</div>
+  <h1>{{제목 — 궁금증을 부르는 한 문장}}</h1>
+  <p class="lede">{{한 줄 요약: 이 기술이 무엇이고 왜 지금 알아야 하는지}}</p>
+  <div class="info">
+    <span>난이도 <b>{{●●○}}</b></span>
+    <span>읽는 시간 <b>{{N}}분</b></span>
+    <span>기준 시점 <b>{{YYYY-MM-DD}}</b></span>
+  </div>
+
+  <section class="tldr">
+    <strong>바쁘면 이것만</strong>
+    <ol>
+      <li>{{핵심 1 — 이게 뭔가}}</li>
+      <li>{{핵심 2 — 어떻게 작동하나}}</li>
+      <li>{{핵심 3 — 그래서 무엇이 달라지나}}</li>
+    </ol>
+  </section>
+
+  <h2><span class="num">01</span>왜 지금 이 주제인가</h2>
+  <p>{{이번 주의 계기(발표·논문·제품·사건)와 날짜. 독자가 이미 들어봤을 법한 장면에서 시작}}</p>
+
+  <h2><span class="num">02</span>비유로 먼저 이해하기</h2>
+  <div class="analogy">
+    <div class="label">비유</div>
+    <p>{{일상 비유 하나로 전체 그림을 잡는다}}</p>
+    <p><small>{{비유가 맞지 않는 지점도 한 줄로 밝힌다}}</small></p>
+  </div>
+
+  <h2><span class="num">03</span>작동 원리</h2>
+  <ol class="steps">
+    <li><strong>{{단계 이름}}</strong> — {{무슨 일이 일어나는지}}</li>
+    <li><strong>{{단계 이름}}</strong> — {{무슨 일이 일어나는지}}</li>
+    <li><strong>{{단계 이름}}</strong> — {{무슨 일이 일어나는지}}</li>
+  </ol>
+  <figure>
+    <!-- 실제 메커니즘을 보여주는 도식으로 교체. 색은 var(--accent) 등 변수만 사용 -->
+    <svg viewBox="0 0 640 140" role="img" aria-label="{{도식 설명}}">
+      <g font-family="Noto Sans KR, sans-serif" font-size="14" text-anchor="middle">
+        <rect x="10" y="40" width="170" height="60" rx="10" fill="var(--accent-soft)" stroke="var(--accent)"/>
+        <text x="95" y="75" fill="var(--ink)">{{입력}}</text>
+        <rect x="235" y="40" width="170" height="60" rx="10" fill="var(--accent-soft)" stroke="var(--accent)"/>
+        <text x="320" y="75" fill="var(--ink)">{{처리}}</text>
+        <rect x="460" y="40" width="170" height="60" rx="10" fill="var(--accent-soft)" stroke="var(--accent)"/>
+        <text x="545" y="75" fill="var(--ink)">{{출력}}</text>
+        <path d="M182 70 H230 M407 70 H455" stroke="var(--accent)" stroke-width="2" marker-end="url(#arr)"/>
+      </g>
+      <defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10z" fill="var(--accent)"/></marker></defs>
+    </svg>
+    <figcaption>{{그림 설명}}</figcaption>
+  </figure>
+
+  <h2><span class="num">04</span>한 걸음 더 깊이</h2>
+  <p>{{접어 둔 내용은 건너뛰어도 전체 이해에 지장이 없게 쓴다}}</p>
+  <details><summary>{{심화 개념 1}}</summary><p>{{설명 — 수식이 필요하면 말로 먼저 풀고 식은 보조로}}</p></details>
+  <details><summary>{{심화 개념 2}}</summary><p>{{설명}}</p></details>
+
+  <h2><span class="num">05</span>숫자로 보기</h2>
+  <div class="stats">
+    <div class="stat"><div class="v">{{값}}</div><div class="l">{{무엇의 수치}}</div><div class="s">{{출처 번호·기준일}}</div></div>
+    <div class="stat"><div class="v">{{값}}</div><div class="l">{{무엇의 수치}}</div><div class="s">{{출처 번호·기준일}}</div></div>
+    <div class="stat"><div class="v">{{값}}</div><div class="l">{{무엇의 수치}}</div><div class="s">{{출처 번호·기준일}}</div></div>
+  </div>
+
+  <h2><span class="num">06</span>한계 · 오해 · 논쟁</h2>
+  <div class="scroll"><table>
+    <thead><tr><th>쟁점</th><th>내용</th><th>근거 수준</th></tr></thead>
+    <tbody>
+      <tr><td>{{쟁점}}</td><td>{{내용}}</td><td><span class="tag fact">확인된 사실</span></td></tr>
+      <tr><td>{{쟁점}}</td><td>{{내용}}</td><td><span class="tag claim">주장·발표</span></td></tr>
+      <tr><td>{{쟁점}}</td><td>{{내용}}</td><td><span class="tag guess">추정</span></td></tr>
+    </tbody>
+  </table></div>
+
+  <h2><span class="num">07</span>일과 실무에 주는 의미</h2>
+  <p>{{직장인·조직 관점: 지금 써볼 수 있는 것, 아직 기다릴 것, 준비할 것}}</p>
+
+  <h2><span class="num">08</span>앞으로 지켜볼 신호</h2>
+  <ul>
+    <li>{{신호 — 이것이 나오면 무엇을 뜻하는지}}</li>
+    <li>{{신호}}</li>
+  </ul>
+
+  <h2><span class="num">09</span>용어집</h2>
+  <dl class="glossary">
+    <dt>{{용어}}</dt><dd>{{한 문장 풀이}}</dd>
+  </dl>
+
+  <h2><span class="num">10</span>출처</h2>
+  <ol class="src">
+    <li><a href="{{URL}}">{{매체·기관 — 제목}}</a> ({{발행일}})</li>
+  </ol>
+
+  <footer>AI 파고 No.{{NN}} · {{YYYY-MM-DD}} 발행 · 수치는 기준 시점의 공개 자료이며, 근거 수준을 표로 구분했습니다.</footer>
+</div>
+</body>
+</html>

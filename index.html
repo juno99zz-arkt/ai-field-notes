@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 파고 아카이브</title>
+<meta name="description" content="한 주에 하나, AI 기술을 깊이 파고들어 쉽게 풀어 쓰는 주간 아카이브">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Noto+Serif+KR:wght@600;900&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F6F4EF; --surface: #FFFFFF; --ink: #15191E; --muted: #5B636D; --line: #E2DED5;
+    --accent: #0B6E6E; --accent-soft: #DCEEEC; --chip: #EFEBE3;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0F1417; --surface: #161D21; --ink: #E9EEF0; --muted: #94A1A8; --line: #253036;
+      --accent: #5CC8C2; --accent-soft: #15302F; --chip: #1C2529;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0F1417; --surface: #161D21; --ink: #E9EEF0; --muted: #94A1A8; --line: #253036;
+    --accent: #5CC8C2; --accent-soft: #15302F; --chip: #1C2529;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif;
+    word-break: keep-all; overflow-wrap: break-word; line-height: 1.6;
+  }
+  .wrap { max-width: 1040px; margin: 0 auto; padding: 0 16px; }
+  header { border-bottom: 1px solid var(--line); }
+  .masthead { padding: 40px 0 28px; }
+  .brand { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  .brand h1 { margin: 0; font-family: 'Noto Serif KR', serif; font-weight: 900; font-size: clamp(34px, 6vw, 52px); letter-spacing: -0.02em; }
+  .brand .en { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--accent); }
+  .tagline { margin: 10px 0 0; color: var(--muted); font-size: 15px; max-width: 560px; }
+  .depth { margin-top: 22px; height: 6px; border-radius: 3px; background: linear-gradient(90deg, var(--accent-soft), var(--accent)); }
+
+  .controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 22px 0 6px; }
+  .search { flex: 1 1 260px; position: relative; }
+  .search input {
+    width: 100%; padding: 11px 14px; border: 1px solid var(--line); border-radius: 10px;
+    background: var(--surface); color: var(--ink); font: inherit; font-size: 14px;
+  }
+  .search input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  select {
+    padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface);
+    color: var(--ink); font: inherit; font-size: 13px;
+  }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 0 22px; }
+  .chip {
+    border: 1px solid transparent; background: var(--chip); color: var(--ink); border-radius: 999px;
+    padding: 6px 13px; font: inherit; font-size: 13px; cursor: pointer;
+  }
+  .chip .n { font-family: 'JetBrains Mono', monospace; font-size: 11px; opacity: .6; margin-left: 4px; }
+  .chip[aria-pressed="true"] { background: var(--accent); color: var(--bg); }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 18px; padding-bottom: 60px; }
+  .card {
+    display: flex; flex-direction: column; text-decoration: none; color: inherit; background: var(--surface);
+    border: 1px solid var(--line); border-radius: 14px; padding: 22px; transition: border-color .15s, transform .15s;
+  }
+  .card:hover { border-color: var(--accent); transform: translateY(-2px); }
+  .card .top { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); }
+  .no { font-family: 'JetBrains Mono', monospace; color: var(--accent); font-weight: 500; }
+  .cat { background: var(--accent-soft); color: var(--accent); border-radius: 6px; padding: 2px 8px; font-weight: 700; }
+  .card h2 { margin: 14px 0 8px; font-family: 'Noto Serif KR', serif; font-weight: 600; font-size: 21px; line-height: 1.4; }
+  .card p { margin: 0; color: var(--muted); font-size: 14px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .meta { margin-top: auto; padding-top: 16px; display: flex; gap: 14px; font-size: 12px; color: var(--muted); }
+  .lv { letter-spacing: 2px; color: var(--accent); }
+
+  .empty { grid-column: 1 / -1; border: 1px dashed var(--line); border-radius: 14px; padding: 48px 20px; text-align: center; color: var(--muted); }
+  .empty strong { display: block; color: var(--ink); font-size: 16px; margin-bottom: 6px; }
+  footer { border-top: 1px solid var(--line); padding: 22px 0 40px; color: var(--muted); font-size: 12px; }
+</style>
+</head>
+<body>
+  <header>
+    <div class="wrap masthead">
+      <div class="brand">
+        <h1>AI 파고</h1>
+        <span class="en">WEEKLY · AI DEEP DIVE</span>
+      </div>
+      <p class="tagline">한 주에 하나, AI 기술을 끝까지 파고듭니다. 비유로 먼저 이해하고, 작동 원리와 숫자, 한계까지 차근차근.</p>
+      <div class="depth" aria-hidden="true"></div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div class="controls">
+      <div class="search"><input id="q" type="search" placeholder="주제, 키워드, 기술 이름으로 찾기" aria-label="리포트 검색"></div>
+      <select id="sort" aria-label="정렬">
+        <option value="new">최신 호부터</option>
+        <option value="old">1호부터</option>
+      </select>
+    </div>
+    <div id="chips" class="chips" role="group" aria-label="분야"></div>
+    <div id="grid" class="grid"></div>
+  </main>
+
+  <footer><div class="wrap">AI 파고 · 주 1회 발행 · 주제는 매주 제안 후 선택해 발행합니다.</div></footer>
+
+<script>
+const CATS = ['전체', '모델·학습', '에이전트', '인프라·칩', '응용·서비스', '정책·안전'];
+const state = { cat: '전체', q: '', sort: 'new', list: [] };
+
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const levelText = n => '●'.repeat(n) + '○'.repeat(3 - n);
+
+async function load() {
+  try {
+    const res = await fetch('./reports/manifest.json', { cache: 'no-store' });
+    const data = res.ok ? await res.json() : [];
+    state.list = Array.isArray(data) ? data.filter(r =>
+      r && typeof r.title === 'string' && /^\.\/reports\/[\w.-]+\.html$/.test(r.siteUrl || '')) : [];
+  } catch (e) { state.list = []; }
+  render();
+}
+
+function render() {
+  const chips = document.getElementById('chips');
+  chips.innerHTML = CATS.map(c => {
+    const n = c === '전체' ? state.list.length : state.list.filter(r => r.category === c).length;
+    return `<button class="chip" data-cat="${esc(c)}" aria-pressed="${state.cat === c}">${esc(c)}<span class="n">${n}</span></button>`;
+  }).join('');
+  chips.querySelectorAll('.chip').forEach(b => b.onclick = () => { state.cat = b.dataset.cat; render(); });
+
+  const q = state.q.trim().toLowerCase();
+  const rows = state.list.filter(r => {
+    if (state.cat !== '전체' && r.category !== state.cat) return false;
+    if (!q) return true;
+    return `${r.title} ${r.subtitle || ''} ${r.category || ''} ${(r.keywords || []).join(' ')}`.toLowerCase().includes(q);
+  }).sort((a, b) => state.sort === 'new' ? (b.no || 0) - (a.no || 0) : (a.no || 0) - (b.no || 0));
+
+  const grid = document.getElementById('grid');
+  if (!rows.length) {
+    grid.innerHTML = state.list.length
+      ? `<div class="empty"><strong>조건에 맞는 호가 없습니다.</strong>검색어나 분야를 바꿔 보세요.</div>`
+      : `<div class="empty"><strong>첫 호를 준비하고 있습니다.</strong>매주 주제 후보를 제안받고, 고른 주제로 발행됩니다.</div>`;
+    return;
+  }
+  grid.innerHTML = rows.map(r => `
+    <a class="card" href="${esc(r.siteUrl)}">
+      <div class="top"><span class="no">No.${String(r.no || 0).padStart(2, '0')} · ${esc(r.date)}</span><span class="cat">${esc(r.category)}</span></div>
+      <h2>${esc(r.title)}</h2>
+      <p>${esc(r.subtitle)}</p>
+      <div class="meta">
+        <span>난이도 <span class="lv">${levelText(Math.min(3, Math.max(1, r.level || 2)))}</span></span>
+        ${r.minutes ? `<span>${esc(r.minutes)}분 읽기</span>` : ''}
+      </div>
+    </a>`).join('');
+}
+
+document.getElementById('q').addEventListener('input', e => { state.q = e.target.value; render(); });
+document.getElementById('sort').addEventListener('change', e => { state.sort = e.target.value; render(); });
+load();
+</script>
+</body>
+</html>
