@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AI 파고 아카이브</title>
-<meta name="description" content="한 주에 하나, AI 기술을 깊이 파고들어 쉽게 풀어 쓰는 주간 아카이브">
+<title>AI Field Notes</title>
+<meta name="description" content="초심자의 눈으로, 매주 하나씩 AI를 깊이 들여다본 기록">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Noto+Serif+KR:wght@600;900&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
@@ -80,10 +80,10 @@
   <header>
     <div class="wrap masthead">
       <div class="brand">
-        <h1>AI 파고</h1>
-        <span class="en">WEEKLY · AI DEEP DIVE</span>
+        <h1>AI Field Notes</h1>
+        <span class="en">WEEKLY · ONE NOTE AT A TIME</span>
       </div>
-      <p class="tagline">한 주에 하나, AI 기술을 끝까지 파고듭니다. 비유로 먼저 이해하고, 작동 원리와 숫자, 한계까지 차근차근.</p>
+      <p class="tagline">초심자의 눈으로, 매주 하나씩 AI를 깊이 들여다본 기록. 비유로 먼저 이해하고, 작동 원리와 숫자, 한계까지 차근차근 적어 갑니다.</p>
       <div class="depth" aria-hidden="true"></div>
     </div>
   </header>
@@ -92,15 +92,15 @@
     <div class="controls">
       <div class="search"><input id="q" type="search" placeholder="주제, 키워드, 기술 이름으로 찾기" aria-label="리포트 검색"></div>
       <select id="sort" aria-label="정렬">
-        <option value="new">최신 호부터</option>
-        <option value="old">1호부터</option>
+        <option value="new">최신 노트부터</option>
+        <option value="old">첫 노트부터</option>
       </select>
     </div>
     <div id="chips" class="chips" role="group" aria-label="분야"></div>
     <div id="grid" class="grid"></div>
   </main>
 
-  <footer><div class="wrap">AI 파고 · 주 1회 발행 · 주제는 매주 제안 후 선택해 발행합니다.</div></footer>
+  <footer><div class="wrap">AI Field Notes · 주 1회 · 주제는 매주 제안받아 골라서 기록합니다.</div></footer>
 
 <script>
 const CATS = ['전체', '모델·학습', '에이전트', '인프라·칩', '응용·서비스', '정책·안전'];
@@ -137,13 +137,13 @@ function render() {
   const grid = document.getElementById('grid');
   if (!rows.length) {
     grid.innerHTML = state.list.length
-      ? `<div class="empty"><strong>조건에 맞는 호가 없습니다.</strong>검색어나 분야를 바꿔 보세요.</div>`
-      : `<div class="empty"><strong>첫 호를 준비하고 있습니다.</strong>매주 주제 후보를 제안받고, 고른 주제로 발행됩니다.</div>`;
+      ? `<div class="empty"><strong>조건에 맞는 노트가 없습니다.</strong>검색어나 분야를 바꿔 보세요.</div>`
+      : `<div class="empty"><strong>첫 노트를 준비하고 있습니다.</strong>매주 주제 후보를 제안받고, 고른 주제로 한 장씩 기록합니다.</div>`;
     return;
   }
   grid.innerHTML = rows.map(r => `
     <a class="card" href="${esc(r.siteUrl)}">
-      <div class="top"><span class="no">No.${String(r.no || 0).padStart(2, '0')} · ${esc(r.date)}</span><span class="cat">${esc(r.category)}</span></div>
+      <div class="top"><span class="no">Note No.${String(r.no || 0).padStart(2, '0')} · ${esc(r.date)}</span><span class="cat">${esc(r.category)}</span></div>
       <h2>${esc(r.title)}</h2>
       <p>${esc(r.subtitle)}</p>
       <div class="meta">
