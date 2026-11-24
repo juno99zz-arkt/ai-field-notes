@@ -1,1 +1,14 @@
-[]
+[
+ {
+  "id": "note-01",
+  "no": 1,
+  "date": "2026-11-24",
+  "category": "응용·서비스",
+  "title": "찾아서 답할까, 알고 답할까 — 벡터 RAG · 그래프 RAG · LLM Wiki로 짓는 HR AI 지식 아키텍처",
+  "subtitle": "똑똑하지만 우리 회사를 모르는 AI에게 사내 규정과 제도를 어떻게 건네줄까? 오픈북 시험, 지하철 노선도, 선배의 정리 노트 — 세 가지 방법을 비유와 움직이는 그림으로 풀었습니다.",
+  "level": 2,
+  "minutes": 15,
+  "keywords": ["RAG", "벡터DB", "GraphRAG", "LazyGraphRAG", "LLM Wiki", "Karpathy", "HR 챗봇", "지식 아키텍처"],
+  "siteUrl": "./reports/2026-11-24-hr-ai-knowledge-architecture.html"
+ }
+]

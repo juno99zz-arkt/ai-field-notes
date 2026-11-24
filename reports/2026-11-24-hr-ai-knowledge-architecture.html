@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>찾아서 답할까, 알고 답할까 — HR AI 지식 아키텍처 — AI Field Notes · Note No.01</title>
+<meta name="description" content="벡터DB RAG, 그래프 RAG, LLM Wiki — 회사 지식을 AI에게 건네는 세 가지 방법을 비유와 움직이는 그림으로 풀고, HR에 어떻게 섞어 쓸지 정리했습니다.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Noto+Serif+KR:wght@600;900&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F6F4EF; --surface: #FFFFFF; --ink: #15191E; --muted: #5B636D; --line: #E2DED5;
+    --accent: #0B6E6E; --accent-soft: #DCEEEC; --warn: #9A5B00; --warn-soft: #F6EAD6; --risk: #A23B3B; --risk-soft: #F5E1E1;
+    --rag: #0B6E6E; --rag-soft: #DCEEEC; --graph: #B4690E; --graph-soft: #F7E8D3; --wiki: #4B4FA8; --wiki-soft: #E3E4F6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0F1417; --surface: #161D21; --ink: #E9EEF0; --muted: #94A1A8; --line: #253036;
+      --accent: #5CC8C2; --accent-soft: #15302F; --warn: #E8B15A; --warn-soft: #2D2416; --risk: #EC8B8B; --risk-soft: #321C1E;
+      --rag: #5CC8C2; --rag-soft: #15302F; --graph: #E8B15A; --graph-soft: #2D2416; --wiki: #A3A8F0; --wiki-soft: #22243F;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0F1417; --surface: #161D21; --ink: #E9EEF0; --muted: #94A1A8; --line: #253036;
+    --accent: #5CC8C2; --accent-soft: #15302F; --warn: #E8B15A; --warn-soft: #2D2416; --risk: #EC8B8B; --risk-soft: #321C1E;
+    --rag: #5CC8C2; --rag-soft: #15302F; --graph: #E8B15A; --graph-soft: #2D2416; --wiki: #A3A8F0; --wiki-soft: #22243F;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: 'Noto Sans KR', -apple-system, sans-serif;
+         font-size: 17px; line-height: 1.8; word-break: keep-all; overflow-wrap: break-word; }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 0 16px; }
+  a { color: var(--accent); }
+  .nav { padding: 18px 0; font-size: 13px; }
+  .nav a { text-decoration: none; }
+  .kicker { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--accent); margin-top: 18px; }
+  h1 { font-family: 'Noto Serif KR', serif; font-weight: 900; font-size: clamp(28px, 5.4vw, 42px); line-height: 1.3; margin: 10px 0 14px; letter-spacing: -0.01em; }
+  .lede { font-size: 19px; color: var(--muted); margin: 0 0 18px; }
+  .info { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 13px; color: var(--muted); padding-bottom: 22px; border-bottom: 1px solid var(--line); }
+  .info b { color: var(--ink); font-weight: 500; }
+  h2 { font-family: 'Noto Serif KR', serif; font-weight: 600; font-size: 25px; margin: 64px 0 14px; line-height: 1.4; }
+  h2 .num { font-family: 'JetBrains Mono', monospace; font-size: 14px; color: var(--accent); display: block; margin-bottom: 2px; }
+  h3 { font-size: 18px; margin: 30px 0 8px; }
+  p { margin: 0 0 16px; }
+  small, .note { font-size: 13px; color: var(--muted); }
+  .tldr { background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 10px; padding: 18px 22px; margin-top: 26px; }
+  .tldr ol { margin: 6px 0 0; padding-left: 20px; }
+  .tldr li { margin: 4px 0; }
+  .analogy { background: var(--accent-soft); border-radius: 12px; padding: 18px 20px; margin: 18px 0; }
+  .analogy .label { font-size: 13px; font-weight: 700; color: var(--accent); display: block; margin-bottom: 4px; }
+  .analogy p:last-child { margin-bottom: 0; }
+  figure { margin: 24px 0; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
+  figure svg { width: 100%; height: auto; display: block; overflow: visible; }
+  figcaption { font-size: 13px; color: var(--muted); margin-top: 10px; }
+  .scroll { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 15px; }
+  th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-size: 13px; color: var(--muted); font-weight: 500; }
+  .tag { display: inline-block; font-size: 12px; font-weight: 700; border-radius: 6px; padding: 1px 8px; white-space: nowrap; }
+  .tag.fact { background: var(--accent-soft); color: var(--accent); }
+  .tag.claim { background: var(--warn-soft); color: var(--warn); }
+  .tag.guess { background: var(--risk-soft); color: var(--risk); }
+  dl.glossary dt { font-weight: 700; margin-top: 12px; }
+  dl.glossary dd { margin: 2px 0 0; color: var(--muted); }
+  ol.src { font-size: 14px; padding-left: 20px; }
+  footer { margin: 64px 0 0; padding: 22px 0 48px; border-top: 1px solid var(--line); font-size: 13px; color: var(--muted); }
+
+  /* 공통 부품 */
+  .grid3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin: 18px 0; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+  .card h4 { margin: 0 0 4px; font-size: 16px; }
+  .card p { margin: 0; font-size: 15px; color: var(--muted); }
+  .card .tagline { font-size: 13px; font-weight: 700; }
+  .m-rag { color: var(--rag); } .m-graph { color: var(--graph); } .m-wiki { color: var(--wiki); }
+  .bd-rag { border-top: 4px solid var(--rag); } .bd-graph { border-top: 4px solid var(--graph); } .bd-wiki { border-top: 4px solid var(--wiki); }
+  .btns { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 12px; }
+  .btn { font: inherit; font-size: 14px; border: 1px solid var(--line); background: var(--bg); color: var(--ink);
+         border-radius: 999px; padding: 7px 14px; cursor: pointer; transition: background .2s, border-color .2s; }
+  .btn:hover { border-color: var(--accent); }
+  .btn[aria-pressed="true"] { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+  .hint { font-size: 13px; color: var(--muted); margin: 0 0 6px; }
+  .proscons { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin: 16px 0; }
+  .proscons .card b { display: block; font-size: 13px; margin-bottom: 4px; }
+
+  /* 등장 모션 — .in 이 붙으면 재생 */
+  .pop { opacity: 0; transform: scale(.7); transform-box: fill-box; transform-origin: center; }
+  .in .pop { animation: pop .5s cubic-bezier(.2,1.4,.4,1) forwards; animation-delay: var(--d, 0s); }
+  @keyframes pop { to { opacity: 1; transform: scale(1); } }
+  .rise { opacity: 0; transform: translateY(18px); }
+  .in .rise { animation: rise .6s ease-out forwards; animation-delay: var(--d, 0s); }
+  @keyframes rise { to { opacity: 1; transform: none; } }
+  .draw { stroke-dasharray: 1; stroke-dashoffset: 1; }
+  .in .draw { animation: draw .9s ease-out forwards; animation-delay: var(--d, 0s); }
+  @keyframes draw { to { stroke-dashoffset: 0; } }
+
+  /* 01 신입사원 */
+  .rookie { display: grid; grid-template-columns: 96px 1fr; gap: 16px; align-items: center; }
+  .rookie svg { width: 96px; height: 96px; }
+  .bubbles { display: grid; gap: 8px; }
+  .bubble { display: flex; gap: 10px; align-items: flex-start; background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; font-size: 15px; }
+  .bubble .ic { flex: none; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-weight: 900; font-size: 14px; color: var(--bg); }
+  .bubble b { display: block; }
+  .blink { animation: blink 3s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+  @keyframes blink { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(.1); } }
+
+  /* 02 스펙트럼 */
+  .spectrum { position: relative; height: 92px; margin: 16px 6px 4px; }
+  .spectrum .bar { position: absolute; left: 0; right: 0; top: 40px; height: 8px; border-radius: 4px;
+                   background: linear-gradient(90deg, var(--rag), var(--graph), var(--wiki)); opacity: .35; }
+  .spectrum .mk { position: absolute; top: 0; left: 0; transform: translateX(-50%); text-align: center; font-size: 13px; font-weight: 700;
+                  transition: left 1.4s cubic-bezier(.2,.8,.2,1); white-space: nowrap; }
+  .spectrum .mk::after { content: ""; display: block; width: 18px; height: 18px; border-radius: 50%; margin: 4px auto 0;
+                         background: currentColor; border: 3px solid var(--surface); box-shadow: 0 0 0 1px currentColor; }
+  .in .spectrum .mk { left: var(--x); }
+  .spectrum .ends { position: absolute; top: 62px; left: 0; right: 0; display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); }
+
+  /* 03 RAG 쪼개기 */
+  .chunker { display: flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap; padding: 8px 0; }
+  .doc { width: 92px; padding: 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); display: grid; gap: 5px; }
+  .doc i { display: block; height: 10px; border-radius: 3px; background: var(--rag-soft); border: 1px solid var(--rag); transition: transform .8s ease, margin .8s ease; }
+  .in .doc i:nth-child(odd) { transform: translateX(-8px) rotate(-2deg); margin: 3px 0; }
+  .in .doc i:nth-child(even) { transform: translateX(8px) rotate(2deg); margin: 3px 0; }
+  .arrow { font-size: 22px; color: var(--muted); }
+  .coords { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--rag); line-height: 1.7; }
+  .coords span { display: block; opacity: 0; }
+  .in .coords span { animation: rise .5s ease-out forwards; animation-delay: var(--d); }
+
+  /* 03 벡터 지도 */
+  #vmap .dot { fill: var(--muted); opacity: .55; transition: fill .3s, opacity .3s, r .3s; }
+  #vmap .dot.hit { fill: var(--rag); opacity: 1; r: 7; }
+  #vmap .dot.miss { fill: var(--risk); opacity: 1; r: 7; }
+  #vmap .ring { fill: none; stroke: var(--risk); stroke-dasharray: 3 3; opacity: 0; }
+  #vmap .ring.on { opacity: 1; animation: spin 6s linear infinite; transform-box: fill-box; transform-origin: center; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #vmap .zone { opacity: .12; }
+  #vmap .zl { font-size: 12px; font-weight: 700; fill: var(--muted); }
+  #vq { transition: transform .9s cubic-bezier(.2,.8,.2,1); }
+  #vq .pulse { fill: none; stroke: var(--rag); animation: pulse 1.6s ease-out infinite; transform-box: fill-box; transform-origin: center; }
+  @keyframes pulse { from { transform: scale(.6); opacity: 1; } to { transform: scale(2.2); opacity: 0; } }
+  #vlines line { stroke: var(--rag); stroke-width: 2; stroke-dasharray: 1; stroke-dashoffset: 1; animation: draw .6s ease-out forwards; animation-delay: var(--d); }
+  .answer { background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; font-size: 15px; min-height: 92px; }
+  .answer ol { margin: 6px 0 0; padding-left: 20px; }
+  .answer .warn { color: var(--risk); font-weight: 700; }
+
+  /* 04 그래프 */
+  #gsvg .edge { stroke: var(--line); stroke-width: 2; fill: none; }
+  #gsvg .elab { font-size: 9.5px; fill: var(--muted); }
+  #gsvg .node circle { fill: var(--surface); stroke-width: 3; }
+  #gsvg .node text { font-size: 11.5px; fill: var(--ink); text-anchor: middle; font-weight: 500; }
+  #gsvg .comm { opacity: 0; transition: opacity 1s; }
+  #gsvg.in .comm { opacity: 1; transition-delay: 1.6s; }
+  #gsvg .cl { font-size: 11px; font-weight: 700; }
+  #groute { stroke: var(--graph); stroke-width: 5; fill: none; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 1; opacity: 0; }
+  #gsvg.route #groute { opacity: .85; animation: draw 2.4s linear forwards; }
+  #gtrain { opacity: 0; }
+  #gsvg.route #gtrain { opacity: 1; }
+  #gsvg.route .node.on circle { stroke: var(--graph); fill: var(--graph-soft); }
+  .gans { opacity: 0; transition: opacity .6s .2s; }
+  .gans.show { opacity: 1; transition-delay: 2.4s; }
+
+  /* 05 위키 */
+  .compile { display: grid; grid-template-columns: 1fr auto 1.3fr; gap: 10px; align-items: center; }
+  .srcdocs { display: grid; gap: 6px; }
+  .srcdocs span { font-size: 13px; border: 1px solid var(--line); border-radius: 6px; padding: 5px 8px; background: var(--bg); }
+  .gear { width: 54px; height: 54px; }
+  .in .gear .g { animation: spin 4s linear infinite; transform-box: fill-box; transform-origin: center; }
+  .page { position: relative; border: 1px solid var(--wiki); border-radius: 10px; padding: 12px; background: var(--wiki-soft); font-size: 13px; }
+  .page .fn { font-family: 'JetBrains Mono', monospace; color: var(--wiki); font-weight: 500; margin-bottom: 6px; }
+  .page .ln { display: block; overflow: hidden; white-space: nowrap; width: 0; }
+  .in .page .ln { animation: type .9s steps(18) forwards; animation-delay: var(--d); }
+  @keyframes type { to { width: 100%; } }
+  .stamp { position: absolute; right: 8px; bottom: 8px; border: 2px solid var(--wiki); color: var(--wiki); font-weight: 900; font-size: 12px;
+           border-radius: 6px; padding: 1px 6px; transform: rotate(-8deg) scale(2.2); opacity: 0; background: var(--surface); }
+  .in .stamp { animation: stamp .35s ease-in forwards; animation-delay: 4.4s; }
+  @keyframes stamp { to { transform: rotate(-8deg) scale(1); opacity: 1; } }
+  .notice { display: flex; gap: 8px; align-items: center; font-size: 14px; border: 1px dashed var(--wiki); border-radius: 10px; padding: 8px 12px;
+            opacity: 0; transform: translateX(-24px); transition: all .5s; }
+  .notice.show { opacity: 1; transform: none; }
+  .pages { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .chip { font-family: 'JetBrains Mono', monospace; font-size: 12.5px; border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; background: var(--bg); transition: all .4s; }
+  .chip .st { font-family: 'Noto Sans KR', sans-serif; font-weight: 700; margin-left: 6px; }
+  .chip.upd { border-color: var(--warn); background: var(--warn-soft); animation: shake .4s 2; }
+  .chip.upd .st { color: var(--warn); }
+  .chip.ok { border-color: var(--wiki); background: var(--wiki-soft); }
+  .chip.ok .st { color: var(--wiki); }
+  @keyframes shake { 25% { transform: translateX(-3px); } 75% { transform: translateX(3px); } }
+
+  /* 06 비교 미터 */
+  .meter { display: grid; grid-template-columns: 92px 1fr; gap: 6px 10px; align-items: center; font-size: 13px; margin-top: 10px; }
+  .meter .track { height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; }
+  .meter .fill { height: 100%; width: 0; border-radius: 4px; transition: width 1.2s cubic-bezier(.2,.8,.2,1); }
+  .in .meter .fill { width: var(--v); }
+  .pick .card { transition: transform .3s, box-shadow .3s, opacity .3s; }
+  .pick.active .card { opacity: .45; }
+  .pick.active .card.best { opacity: 1; transform: translateY(-4px); box-shadow: 0 8px 20px rgba(0,0,0,.12); }
+
+  /* 07 비용 막대 */
+  .cost { display: grid; gap: 14px; }
+  .cost .row b { font-size: 14px; display: block; margin-bottom: 4px; }
+  .cost .bars { display: grid; gap: 4px; }
+  .cost .b { display: grid; grid-template-columns: 74px 1fr; gap: 8px; align-items: center; font-size: 12px; color: var(--muted); }
+  .cost .b span { display: block; height: 12px; border-radius: 3px; width: 0; transition: width 1.2s cubic-bezier(.2,.8,.2,1); }
+  .in .cost .b span { width: calc(var(--v) * 20%); }
+  .big { font-family: 'JetBrains Mono', monospace; font-size: 36px; color: var(--graph); line-height: 1.2; }
+
+  /* 08 질문 라우터 */
+  .lanes { display: grid; gap: 10px; margin-top: 8px; }
+  .lane { position: relative; display: grid; grid-template-columns: 1fr; border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px 12px 14px; background: var(--surface); transition: border-color .3s, background .3s; overflow: hidden; }
+  .lane h4 { margin: 0; font-size: 15px; }
+  .lane p { margin: 2px 0 0; font-size: 14px; color: var(--muted); }
+  .lane .track { position: absolute; left: 0; right: 0; top: 0; height: 3px; background: transparent; }
+  .lane .pkt { position: absolute; top: -3px; left: -20px; width: 18px; height: 9px; border-radius: 5px; background: var(--accent); opacity: 0; }
+  .lane.on { border-color: var(--accent); background: var(--accent-soft); }
+  .lane.on .pkt { animation: run 1.1s ease-in-out 2; }
+  @keyframes run { 0% { left: -20px; opacity: 1; } 100% { left: 100%; opacity: 1; } }
+  .routed { font-size: 15px; min-height: 28px; margin-top: 10px; }
+
+  /* 08 층 쌓기 */
+  .stack { display: grid; gap: 8px; }
+  .layer { display: grid; grid-template-columns: 44px 1fr; gap: 10px; align-items: center; border-radius: 10px; padding: 10px 12px; border: 1px solid var(--line); background: var(--surface);
+           opacity: 0; transform: translateY(-40px); }
+  .in .layer { animation: drop .6s cubic-bezier(.3,1.4,.5,1) forwards; animation-delay: var(--d); }
+  @keyframes drop { to { opacity: 1; transform: none; } }
+  .layer .lv { font-family: 'JetBrains Mono', monospace; font-weight: 500; font-size: 14px; text-align: center; border-radius: 6px; padding: 4px 0; color: var(--bg); }
+  .layer b { display: block; font-size: 15px; }
+  .layer span { font-size: 13px; color: var(--muted); }
+
+  @media (max-width: 520px) {
+    .compile { grid-template-columns: 1fr; justify-items: stretch; }
+    .compile .gear { margin: 0 auto; transform: rotate(90deg); }
+    .rookie { grid-template-columns: 1fr; justify-items: center; }
+    .rookie .bubbles { width: 100%; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; animation-delay: 0s !important; transition-delay: 0s !important; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="nav"><a href="../">← AI Field Notes</a></div>
+
+  <div class="kicker">AI Field Notes · Note No.01 · 2026-11-24 · 응용·서비스</div>
+  <h1>찾아서 답할까, 알고 답할까 — 벡터 RAG · 그래프 RAG · LLM Wiki로 짓는 HR AI 지식 아키텍처</h1>
+  <p class="lede">똑똑하지만 우리 회사를 모르는 AI에게 사내 규정과 제도를 어떻게 건네줄까요? 세 가지 방법을 비유와 움직이는 그림으로 하나씩 뜯어보고, HR에서는 어떻게 섞어 쓰면 좋을지 정리했습니다.</p>
+  <div class="info">
+    <span>난이도 <b>●●○</b></span>
+    <span>읽는 시간 <b>15분</b></span>
+    <span>기준 시점 <b>2026-11-24</b></span>
+  </div>
+
+  <figure class="reveal" aria-label="HR 문서가 세 가지 방식으로 흘러가는 그림">
+    <svg viewBox="0 0 360 230" role="img" aria-label="인사규정·복리후생·FAQ·매뉴얼이 HR 지식으로 모여 RAG, GraphRAG, LLM Wiki로 갈라지는 그림">
+      <g font-family="Noto Sans KR, sans-serif" font-size="11.5">
+        <g fill="none" stroke="var(--line)" stroke-width="2">
+          <path id="h1" d="M84 33 C120 33 125 112 146 114"/>
+          <path id="h2" d="M84 88 C115 88 125 112 146 114"/>
+          <path id="h3" d="M84 143 C115 143 125 116 146 116"/>
+          <path id="h4" d="M84 198 C120 198 125 118 146 116"/>
+          <path id="o1" d="M200 108 C222 100 222 40 244 40"/>
+          <path id="o2" d="M202 115 L244 115"/>
+          <path id="o3" d="M200 122 C222 130 222 190 244 190"/>
+        </g>
+        <g class="pop" style="--d:.0s"><rect x="10" y="20" width="74" height="26" rx="6" fill="var(--bg)" stroke="var(--line)"/><text x="47" y="37" text-anchor="middle" fill="var(--ink)">인사규정</text></g>
+        <g class="pop" style="--d:.1s"><rect x="10" y="75" width="74" height="26" rx="6" fill="var(--bg)" stroke="var(--line)"/><text x="47" y="92" text-anchor="middle" fill="var(--ink)">복리후생</text></g>
+        <g class="pop" style="--d:.2s"><rect x="10" y="130" width="74" height="26" rx="6" fill="var(--bg)" stroke="var(--line)"/><text x="47" y="147" text-anchor="middle" fill="var(--ink)">FAQ·공지</text></g>
+        <g class="pop" style="--d:.3s"><rect x="10" y="185" width="74" height="26" rx="6" fill="var(--bg)" stroke="var(--line)"/><text x="47" y="202" text-anchor="middle" fill="var(--ink)">업무 매뉴얼</text></g>
+        <g class="pop" style="--d:.45s"><circle cx="174" cy="115" r="30" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2"/><text x="174" y="112" text-anchor="middle" fill="var(--ink)" font-weight="700">HR</text><text x="174" y="127" text-anchor="middle" fill="var(--ink)" font-size="10.5">지식 기반</text></g>
+        <g class="pop" style="--d:.6s"><rect x="244" y="20" width="108" height="40" rx="8" fill="var(--rag-soft)" stroke="var(--rag)"/><text x="298" y="37" text-anchor="middle" fill="var(--rag)" font-weight="700">RAG</text><text x="298" y="52" text-anchor="middle" fill="var(--ink)" font-size="10.5">찾아서 답하기</text></g>
+        <g class="pop" style="--d:.7s"><rect x="244" y="95" width="108" height="40" rx="8" fill="var(--graph-soft)" stroke="var(--graph)"/><text x="298" y="112" text-anchor="middle" fill="var(--graph)" font-weight="700">GraphRAG</text><text x="298" y="127" text-anchor="middle" fill="var(--ink)" font-size="10.5">관계로 답하기</text></g>
+        <g class="pop" style="--d:.8s"><rect x="244" y="170" width="108" height="40" rx="8" fill="var(--wiki-soft)" stroke="var(--wiki)"/><text x="298" y="187" text-anchor="middle" fill="var(--wiki)" font-weight="700">LLM Wiki</text><text x="298" y="202" text-anchor="middle" fill="var(--ink)" font-size="10.5">정리해 두고 답하기</text></g>
+        <g class="smil">
+          <circle r="4" fill="var(--accent)"><animateMotion dur="2.6s" repeatCount="indefinite"><mpath href="#h1"/></animateMotion></circle>
+          <circle r="4" fill="var(--accent)"><animateMotion dur="2.6s" begin="-.6s" repeatCount="indefinite"><mpath href="#h2"/></animateMotion></circle>
+          <circle r="4" fill="var(--accent)"><animateMotion dur="2.6s" begin="-1.2s" repeatCount="indefinite"><mpath href="#h3"/></animateMotion></circle>
+          <circle r="4" fill="var(--accent)"><animateMotion dur="2.6s" begin="-1.8s" repeatCount="indefinite"><mpath href="#h4"/></animateMotion></circle>
+          <circle r="4" fill="var(--rag)"><animateMotion dur="2s" begin="-.3s" repeatCount="indefinite"><mpath href="#o1"/></animateMotion></circle>
+          <circle r="4" fill="var(--graph)"><animateMotion dur="2s" begin="-1s" repeatCount="indefinite"><mpath href="#o2"/></animateMotion></circle>
+          <circle r="4" fill="var(--wiki)"><animateMotion dur="2s" begin="-1.6s" repeatCount="indefinite"><mpath href="#o3"/></animateMotion></circle>
+        </g>
+      </g>
+    </svg>
+    <figcaption>같은 HR 문서라도, AI에게 건네는 방식은 크게 세 갈래입니다.</figcaption>
+  </figure>
+
+  <section class="tldr">
+    <strong>바쁘면 이것만</strong>
+    <ol>
+      <li><b>RAG</b>는 질문이 올 때마다 문서를 찾아 읽는 <b>오픈북 시험</b>, <b>GraphRAG</b>는 관계를 지도로 그려 두고 따라가는 <b>노선도</b>, <b>LLM Wiki</b>는 AI가 미리 정리해 둔 <b>선배의 업무 노트</b>입니다.</li>
+      <li>셋은 경쟁 관계가 아니라 <b>"얼마나 미리 정리해 두느냐"</b>의 차이입니다. 하나를 고르는 게 아니라 층을 쌓듯 섞어 씁니다.</li>
+      <li>HR 챗봇의 품질은 검색 기술보다 <b>사람이 검수한 정답</b>이 좌우하고, "내 연차 며칠 남았지?" 같은 개인 질문은 문서 검색이 아니라 <b>인사 시스템 연동</b>으로 답해야 합니다.</li>
+    </ol>
+  </section>
+
+  <!-- 01 -->
+  <h2><span class="num">01</span>출발점: 똑똑한 신입사원에게 회사를 어떻게 가르칠까</h2>
+  <p>ChatGPT 같은 대형 언어 모델(LLM)은 책을 엄청나게 많이 읽은 사람과 비슷합니다. 세상 일반 지식은 풍부하지만, <b>우리 회사에 대해서는 입사 첫날의 신입사원</b>이죠. 이 신입사원에게는 세 가지 버릇이 있습니다.</p>
+
+  <figure class="reveal">
+    <div class="rookie">
+      <svg viewBox="0 0 96 96" aria-hidden="true">
+        <circle cx="48" cy="48" r="44" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2"/>
+        <rect x="26" y="34" width="44" height="30" rx="10" fill="var(--surface)" stroke="var(--accent)" stroke-width="2"/>
+        <g class="blink"><circle cx="39" cy="48" r="4" fill="var(--accent)"/><circle cx="57" cy="48" r="4" fill="var(--accent)"/></g>
+        <line x1="48" y1="34" x2="48" y2="24" stroke="var(--accent)" stroke-width="2"/><circle cx="48" cy="21" r="4" fill="var(--accent)"/>
+        <text x="48" y="80" text-anchor="middle" font-size="10" font-family="Noto Sans KR" fill="var(--ink)">신입 AI</text>
+      </svg>
+      <div class="bubbles">
+        <div class="bubble rise" style="--d:.2s"><span class="ic" style="background:var(--warn)">?</span><span><b>모릅니다</b>사내 규정, 이번 달 바뀐 내용은 배운 적이 없습니다.</span></div>
+        <div class="bubble rise" style="--d:.6s"><span class="ic" style="background:var(--risk)">!</span><span><b>그럴듯하게 지어냅니다</b>모르면 아는 척 답합니다. 이걸 '환각'이라고 부릅니다.</span></div>
+        <div class="bubble rise" style="--d:1s"><span class="ic" style="background:var(--muted)">×</span><span><b>가리지 않습니다</b>누가 어떤 정보를 봐도 되는지(권한) 모릅니다.</span></div>
+      </div>
+    </div>
+  </figure>
+
+  <p>그래서 필요한 게 <b>AI 지식 아키텍처</b>, 즉 "회사 지식을 AI에게 건네주는 설계도"입니다. 방법은 크게 세 가지가 있습니다.</p>
+
+  <div class="grid3">
+    <div class="card bd-rag"><span class="tagline m-rag">RAG</span><h4>오픈북 시험</h4><p>질문을 받을 때마다 문서 서랍에서 관련 페이지를 찾아 펼쳐 보고 답합니다.</p></div>
+    <div class="card bd-graph"><span class="tagline m-graph">GraphRAG</span><h4>노선도를 그려 둔 오픈북</h4><p>사람·조직·제도의 연결을 지도로 그려 두고, 선을 따라가며 답합니다.</p></div>
+    <div class="card bd-wiki"><span class="tagline m-wiki">LLM Wiki</span><h4>선배의 업무 정리 노트</h4><p>AI가 원문을 미리 읽고 주제별 노트를 만들어 두고, 계속 고쳐 쓰며 답합니다.</p></div>
+  </div>
+
+  <div class="analogy">
+    <span class="label">그럼 그냥 외우게 하면 안 되나요?</span>
+    <p>AI를 다시 학습시켜 회사 지식을 '외우게' 하는 방법(파인튜닝)도 있습니다. 하지만 규정은 자주 바뀝니다. 교과서가 바뀔 때마다 학생을 처음부터 다시 가르치는 셈이라 비용이 크고, 무엇을 보고 답했는지 출처를 보여 줄 수도 없습니다. 그래서 원칙은 <b>"지식은 밖에 두고, 필요할 때 연결한다"</b>입니다.</p>
+  </div>
+
+  <!-- 02 -->
+  <h2><span class="num">02</span>모으고, 정리하고, 담고, 찾고, 답한다</h2>
+  <p>어떤 방식이든 지식이 AI의 답이 되기까지는 같은 다섯 단계를 거칩니다. 세 방식의 차이는 주로 <b>② 정리</b>와 <b>④ 찾기</b>에서 생깁니다.</p>
+
+  <figure class="reveal">
+    <svg viewBox="0 0 360 118" role="img" aria-label="모으기, 정리, 담기, 찾기, 답하기 다섯 단계를 점이 차례로 지나가는 그림">
+      <g font-family="Noto Sans KR, sans-serif" text-anchor="middle">
+        <path id="pipe" d="M36 44 H324" stroke="var(--line)" stroke-width="4" fill="none"/>
+        <path d="M36 44 H324" stroke="var(--accent)" stroke-width="4" fill="none" pathLength="1" class="draw" style="--d:.2s"/>
+        <g class="pop" style="--d:.1s"><circle cx="36" cy="44" r="19" fill="var(--surface)" stroke="var(--muted)" stroke-width="2"/><text x="36" y="49" font-size="13" fill="var(--ink)">①</text></g>
+        <g class="pop" style="--d:.3s"><circle cx="108" cy="44" r="19" fill="var(--accent)"/><text x="108" y="49" font-size="13" fill="var(--bg)">②</text></g>
+        <g class="pop" style="--d:.5s"><circle cx="180" cy="44" r="19" fill="var(--surface)" stroke="var(--muted)" stroke-width="2"/><text x="180" y="49" font-size="13" fill="var(--ink)">③</text></g>
+        <g class="pop" style="--d:.7s"><circle cx="252" cy="44" r="19" fill="var(--accent)"/><text x="252" y="49" font-size="13" fill="var(--bg)">④</text></g>
+        <g class="pop" style="--d:.9s"><circle cx="324" cy="44" r="19" fill="var(--surface)" stroke="var(--muted)" stroke-width="2"/><text x="324" y="49" font-size="13" fill="var(--ink)">⑤</text></g>
+        <g font-size="13" fill="var(--ink)" font-weight="700"><text x="36" y="86">모으기</text><text x="108" y="86">정리하기</text><text x="180" y="86">담기</text><text x="252" y="86">찾기</text><text x="324" y="86">답하기</text></g>
+        <g font-size="10.5" fill="var(--muted)"><text x="36" y="104">규정·FAQ</text><text x="108" y="104">쪼개기·요약</text><text x="180" y="104">DB·위키</text><text x="252" y="104">골라 건네기</text><text x="324" y="104">출처와 함께</text></g>
+        <circle r="6" fill="var(--warn)" class="smil-dot"><animateMotion dur="3.6s" repeatCount="indefinite"><mpath href="#pipe"/></animateMotion></circle>
+      </g>
+    </svg>
+    <figcaption>모든 단계에 공통으로 필요한 것: 권한(누가 무엇을 보는가) · 출처 표시 · 질문과 답변 기록 · 정답률 평가</figcaption>
+  </figure>
+
+  <div class="analogy">
+    <span class="label">비유 — 즉석 요리 vs 밑반찬</span>
+    <p>손님이 주문할 때마다 장을 보고 요리할 수도 있고(질문할 때 찾기), 자주 나가는 반찬은 미리 만들어 둘 수도 있습니다(미리 정리해 두기). 즉석 요리는 준비가 가볍고 재료가 늘 신선하지만, 매번 맛이 조금씩 다를 수 있습니다. 밑반찬은 맛이 일정하고 빨리 나가지만, 미리 만드는 수고가 듭니다.</p>
+  </div>
+
+  <figure class="reveal">
+    <div class="spectrum">
+      <div class="bar"></div>
+      <div class="mk m-rag" style="--x:12%">RAG</div>
+      <div class="mk m-graph" style="--x:55%">GraphRAG</div>
+      <div class="mk m-wiki" style="--x:88%">LLM Wiki</div>
+      <div class="ends"><span>← 질문할 때 찾기<br>구축 쉬움 · 최신 문서 즉시 반영</span><span style="text-align:right">미리 정리해 두기 →<br>답이 일관되고 깊음 · 사전 작업 큼</span></div>
+    </div>
+    <figcaption>RAG는 정리를 최소로 하고 질문마다 원문을 찾습니다. GraphRAG는 관계를 미리 뽑아 두고, LLM Wiki는 지식 자체를 미리 정리(컴파일)해 둡니다.</figcaption>
+  </figure>
+
+  <!-- 03 -->
+  <h2><span class="num">03</span>RAG — 질문이 오면, 관련 조각을 찾아 읽고 답한다</h2>
+  <p>RAG는 Retrieval-Augmented Generation, 우리말로 <b>검색 증강 생성</b>입니다. 이름이 어렵지만 하는 일은 도서관 사서와 같습니다. 질문을 받으면 서가에서 관련 페이지를 찾아 AI에게 건네고, AI는 그 페이지를 읽고 답합니다.</p>
+
+  <h3>준비 단계: 문서를 '찾을 수 있는 상태'로 만들기</h3>
+  <figure class="reveal">
+    <div class="chunker">
+      <div class="doc" aria-label="문서 한 장"><i></i><i></i><i></i><i></i><i></i></div>
+      <span class="arrow">→</span>
+      <div class="coords">
+        <span style="--d:.9s">조각1 → (0.12, 0.87, …)</span>
+        <span style="--d:1.1s">조각2 → (0.15, 0.80, …)</span>
+        <span style="--d:1.3s">조각3 → (0.91, 0.08, …)</span>
+        <span style="--d:1.5s">조각4 → (0.44, 0.52, …)</span>
+      </div>
+    </div>
+    <figcaption>① 문서를 500자 안팎의 조각(청크)으로 자르고 ② 각 조각의 '뜻'을 숫자 좌표로 바꿉니다(임베딩). ③ 이 좌표를 벡터DB라는 지도에 꽂아 둡니다.</figcaption>
+  </figure>
+
+  <div class="analogy">
+    <span class="label">비유 — 마트 진열대</span>
+    <p>임베딩은 물건마다 진열 위치를 정하는 일입니다. 우유 옆에 요거트, 라면 옆에 즉석밥이 놓이듯, <b>뜻이 비슷한 조각은 지도에서 가까이</b> 모입니다. 단어가 달라도 괜찮습니다. "육아휴직 급여"와 "휴직 기간 중 보수"는 글자가 달라도 같은 코너에 놓입니다.</p>
+  </div>
+
+  <h3>질문 단계: 가장 가까운 조각 3개를 찾기</h3>
+  <p class="hint">아래 질문을 눌러 보세요. 질문도 좌표로 바뀌어 지도 위에 떨어지고, 가장 가까운 조각 3개를 집어 옵니다.</p>
+  <div class="btns" id="vbtns" role="group" aria-label="RAG 예시 질문">
+    <button class="btn" data-q="0" aria-pressed="false">육아휴직 중 급여는?</button>
+    <button class="btn" data-q="1" aria-pressed="false">배우자 출산휴가는 며칠?</button>
+    <button class="btn" data-q="2" aria-pressed="false">승진 심사 기준은?</button>
+    <button class="btn" data-q="3" aria-pressed="false">올해 바뀐 복리후생 전부 정리해 줘</button>
+  </div>
+  <figure class="reveal" style="margin-top:6px">
+    <svg id="vmap" viewBox="0 0 360 300" role="img" aria-label="뜻이 비슷한 문서 조각이 네 구역으로 모인 벡터 지도">
+      <g font-family="Noto Sans KR, sans-serif">
+        <circle class="zone" cx="88" cy="80" r="68" fill="var(--rag)"/>
+        <circle class="zone" cx="262" cy="80" r="68" fill="var(--warn)"/>
+        <circle class="zone" cx="95" cy="232" r="62" fill="var(--wiki)"/>
+        <circle class="zone" cx="275" cy="225" r="66" fill="var(--graph)"/>
+        <text class="zl" x="12" y="18">휴가·휴직</text>
+        <text class="zl" x="348" y="18" text-anchor="end">급여·보상</text>
+        <text class="zl" x="12" y="294">평가·승진</text>
+        <text class="zl" x="348" y="294" text-anchor="end">복리후생</text>
+        <g id="vlines"></g>
+        <g id="vdots"></g>
+        <g id="vq" style="transform: translate(180px,150px); opacity:0">
+          <circle class="pulse" r="10" stroke-width="2"/>
+          <path d="M0 -10 L3 -3 L10 -3 L4.5 1.5 L6.5 9 L0 4.5 L-6.5 9 L-4.5 1.5 L-10 -3 L-3 -3 Z" fill="var(--rag)"/>
+        </g>
+      </g>
+    </svg>
+    <div class="answer" id="vans" aria-live="polite">질문을 고르면 AI가 집어 온 조각이 여기에 표시됩니다.</div>
+    <figcaption>문서 이름과 내용은 원리를 보여 주기 위한 예시입니다.</figcaption>
+  </figure>
+
+  <p>네 번째 질문을 눌러 보면 RAG의 약점이 보입니다. "올해 바뀐 복리후생 <b>전부</b>"처럼 여러 문서를 모아야 하는 질문에서는, 가까운 조각 몇 개만 집어 오기 때문에 <b>다른 코너에 꽂힌 개정 내용을 놓칩니다.</b> 개정 전 문서와 개정 후 문서가 함께 검색되는 문제도 자주 생깁니다.</p>
+
+  <div class="proscons">
+    <div class="card"><b class="m-rag">잘하는 질문</b><p>"배우자 출산휴가는 며칠인가요?"처럼 답이 문서 한 곳에 있는 질문</p></div>
+    <div class="card"><b style="color:var(--risk)">어려운 질문</b><p>"올해 바뀐 복리후생 전부"처럼 여러 문서를 모으거나 문서 사이를 이어야 하는 질문</p></div>
+  </div>
+
+  <details class="card" style="margin-top:12px">
+    <summary><b>한 걸음 더 — 실무에서는 이렇게 보완합니다</b></summary>
+    <p style="margin-top:10px"><b>하이브리드 검색:</b> 뜻으로 찾는 벡터 검색에 글자 그대로 찾는 키워드 검색을 더합니다. "제23조"나 제도 고유 이름처럼 정확한 단어가 중요한 경우를 키워드 검색이 잡아 줍니다. 도서관으로 치면 '주제 서가 둘러보기'와 '도서 목록에서 제목 검색'을 함께 쓰는 셈입니다.</p>
+    <p><b>재정렬(Re-ranking):</b> 1차로 넉넉히 후보를 뽑은 뒤, 더 꼼꼼한 모델이 질문과 정말 맞는 순서로 다시 줄을 세웁니다. 서류 심사 뒤에 면접을 한 번 더 보는 것과 같습니다.</p>
+  </details>
+
+  <!-- 04 -->
+  <h2><span class="num">04</span>GraphRAG — 관계를 지도로 그려 두고, 따라가며 답한다</h2>
+  <p>GraphRAG는 AI가 문서를 <b>미리</b> 읽고, 그 안의 사람·조직·제도를 <b>점(개체)</b>으로, 그 사이의 관계를 <b>선</b>으로 이어 '지식 그래프'를 만들어 둡니다. 그리고 질문이 오면 이 선을 따라가며 답을 찾습니다.</p>
+
+  <div class="analogy">
+    <span class="label">비유 — 지하철 노선도</span>
+    <p>RAG가 "목적지 이름이 비슷한 역"을 찾는다면, GraphRAG는 <b>노선도를 펼쳐 놓고 환승하며</b> 목적지까지 갑니다. 한 문서에는 없지만, 여러 문서의 연결을 따라가면 나오는 답을 찾을 수 있습니다.</p>
+  </div>
+
+  <p class="hint">버튼을 누르면 질문이 노선을 따라 이동합니다. <b>질문(예시): 교대근무자가 육아휴직 후 복직하면 받을 수 있는 지원은?</b></p>
+  <div class="btns"><button class="btn" id="gbtn" aria-pressed="false">노선 따라가기 ▶</button></div>
+  <figure class="reveal" id="gfig" style="margin-top:6px">
+    <svg id="gsvg" viewBox="0 0 360 340" role="img" aria-label="교대근무자, 근무형태 규정, 단축근무, 복직 지원, 육아휴직 등이 선으로 이어진 지식 그래프">
+      <g font-family="Noto Sans KR, sans-serif">
+        <g class="comm">
+          <ellipse cx="170" cy="92" rx="165" ry="78" fill="var(--graph-soft)" opacity=".55"/>
+          <text class="cl" x="150" y="150" fill="var(--graph)">근무제도 동네</text>
+          <ellipse cx="175" cy="262" rx="168" ry="68" fill="var(--wiki-soft)" opacity=".55"/>
+          <text class="cl" x="14" y="334" fill="var(--wiki)">휴직·복직 동네</text>
+        </g>
+        <g>
+          <path class="edge draw" pathLength="1" style="--d:.5s" d="M60 50 L60 140"/>
+          <path class="edge draw" pathLength="1" style="--d:.6s" d="M60 50 L170 70"/>
+          <path class="edge draw" pathLength="1" style="--d:.7s" d="M170 70 L280 110"/>
+          <path class="edge draw" pathLength="1" style="--d:.8s" d="M280 110 L300 32"/>
+          <path class="edge draw" pathLength="1" style="--d:.9s" d="M280 110 L240 220"/>
+          <path class="edge draw" pathLength="1" style="--d:1s" d="M240 220 L110 250"/>
+          <path class="edge draw" pathLength="1" style="--d:1.1s" d="M110 250 L55 300"/>
+          <path class="edge draw" pathLength="1" style="--d:1.2s" d="M110 250 L300 295"/>
+          <text class="elab" x="64" y="98">소속</text>
+          <text class="elab" x="104" y="52">적용 대상</text>
+          <text class="elab" x="222" y="82">허용</text>
+          <text class="elab" x="294" y="76">담당</text>
+          <text class="elab" x="264" y="168">함께 신청</text>
+          <text class="elab" x="160" y="226">복귀 시</text>
+          <text class="elab" x="58" y="272">근거</text>
+          <text class="elab" x="200" y="288">연계</text>
+        </g>
+        <path id="groute" pathLength="1" d="M110 250 L240 220 L280 110 L170 70 L60 50"/>
+        <g class="node pop on" style="--d:.1s"><circle cx="60" cy="50" r="9" stroke="var(--muted)"/><text x="60" y="36">교대근무자</text></g>
+        <g class="node pop" style="--d:.15s"><circle cx="60" cy="140" r="9" stroke="var(--muted)"/><text x="60" y="164">생산 조직</text></g>
+        <g class="node pop on" style="--d:.2s"><circle cx="170" cy="70" r="9" stroke="var(--muted)"/><text x="170" y="98">근무형태 규정</text></g>
+        <g class="node pop on" style="--d:.25s"><circle cx="280" cy="110" r="9" stroke="var(--muted)"/><text x="308" y="134">단축근무</text></g>
+        <g class="node pop" style="--d:.3s"><circle cx="300" cy="32" r="9" stroke="var(--muted)"/><text x="300" y="16">HR 담당 그룹</text></g>
+        <g class="node pop on" style="--d:.35s"><circle cx="240" cy="220" r="9" stroke="var(--muted)"/><text x="240" y="246">복직 지원</text></g>
+        <g class="node pop on" style="--d:.4s"><circle cx="110" cy="250" r="9" stroke="var(--muted)"/><text x="110" y="276">육아휴직</text></g>
+        <g class="node pop" style="--d:.45s"><circle cx="55" cy="300" r="9" stroke="var(--muted)"/><text x="98" y="316">취업규칙</text></g>
+        <g class="node pop" style="--d:.5s"><circle cx="300" cy="295" r="9" stroke="var(--muted)"/><text x="300" y="320">보육 지원</text></g>
+        <g id="gtrain">
+          <rect x="-11" y="-7" width="22" height="14" rx="5" fill="var(--graph)"/>
+          <animateMotion id="gmove" dur="2.4s" begin="indefinite" fill="freeze" rotate="0"><mpath href="#groute"/></animateMotion>
+        </g>
+      </g>
+    </svg>
+    <div class="answer gans" id="gans"><b class="m-graph">답 — 선을 건너며 찾음</b><br>육아휴직에서 <b>복직 지원</b>으로, 복직 지원과 함께 신청하는 <b>단축근무</b>로, 단축근무를 허용하는 <b>근무형태 규정</b>을 지나 <b>교대근무자</b>에게도 적용된다는 사실까지 이어집니다. 한 문서에는 없던 답입니다.</div>
+    <figcaption>개체·관계·답변은 작동 방식을 보여 주기 위한 가상 예시입니다.</figcaption>
+  </figure>
+
+  <h3>GraphRAG는 이렇게 만듭니다</h3>
+  <ol>
+    <li><b>개체·관계 뽑기</b> — LLM이 문서 조각마다 "누가·무엇에·어떻게"를 뽑아냅니다.</li>
+    <li><b>그래프로 잇기</b> — 같은 개체를 하나로 합쳐 전체를 하나의 지도로 연결합니다.</li>
+    <li><b>동네별 요약</b> — 서로 가깝게 엮인 개체 묶음(커뮤니티)마다 요약문을 미리 써 둡니다. 동네마다 안내 책자를 만들어 두는 셈입니다.</li>
+    <li><b>질문 시 탐색</b> — 세부 질문은 이웃 역을 따라가고, "전체적으로 어떤 흐름인가?" 같은 질문은 동네 안내 책자들을 모아 답합니다.</li>
+  </ol>
+  <p>Microsoft 연구진은 2024년 논문에서 이 방식이 "자료 전체의 주요 주제는?" 같은 <b>전체 조망형 질문</b>에서 일반 RAG보다 더 포괄적이고 다양한 답을 낸다고 보고했습니다.<sup>[2]</sup></p>
+
+  <div class="proscons">
+    <div class="card"><b class="m-graph">강점</b><p>여러 문서를 건너는 질문, 조직·제도 사이의 관계, 전체를 내려다보는 요약</p></div>
+    <div class="card"><b style="color:var(--risk)">약점</b><p>LLM이 모든 문서를 미리 읽어야 해서 구축비가 큼. 관계를 잘못 뽑는 오류, 문서가 바뀔 때마다 다시 만드는 부담</p></div>
+  </div>
+
+  <!-- 05 -->
+  <h2><span class="num">05</span>LLM Wiki — 정리 노트를 쌓아 두고, 계속 고쳐 쓴다</h2>
+  <p>LLM Wiki는 Andrej Karpathy가 2026년 4월에 제안한 패턴입니다.<sup>[4]</sup> 질문이 올 때마다 원문을 다시 뒤지는 대신, <b>AI가 원문을 한 번 읽고 주제별 위키 페이지로 정리</b>해 두고, 새 자료가 들어올 때마다 그 페이지들을 고쳐 씁니다. 지식이 쌓일수록 노트가 두꺼워집니다.</p>
+
+  <div class="analogy">
+    <span class="label">비유 — 선배의 업무 정리 노트</span>
+    <p>새로 온 팀원이 규정집 전체를 뒤지는 대신, 선배가 "육아휴직 정리.txt"를 건네주는 장면을 떠올려 보세요. 대상·기간·급여·신청 절차·관련 제도·근거 조항이 한 장에 정리되어 있습니다. 규정이 바뀌면 선배가 그 노트를 고칩니다. LLM Wiki에서는 이 선배 역할을 AI가 하고, <b>최종 확인은 사람이 합니다.</b></p>
+  </div>
+
+  <figure class="reveal">
+    <div class="compile">
+      <div class="srcdocs">
+        <span class="rise" style="--d:.1s">취업규칙</span>
+        <span class="rise" style="--d:.25s">복리후생 가이드</span>
+        <span class="rise" style="--d:.4s">육아지원 FAQ</span>
+        <span class="rise" style="--d:.55s">새 인사 공지</span>
+      </div>
+      <svg class="gear" viewBox="0 0 54 54" aria-hidden="true">
+        <g class="g"><circle cx="27" cy="27" r="14" fill="none" stroke="var(--wiki)" stroke-width="6" stroke-dasharray="6 5"/><circle cx="27" cy="27" r="7" fill="var(--wiki)"/></g>
+      </svg>
+      <div class="page">
+        <div class="fn">육아휴직.md</div>
+        <span class="ln" style="--d:1s"><b>대상</b> 자녀 연령·재직 요건</span>
+        <span class="ln" style="--d:1.6s"><b>기간·급여</b> 기간과 지급 기준 요약</span>
+        <span class="ln" style="--d:2.2s"><b>신청</b> 절차 · 서류 · 신청 화면</span>
+        <span class="ln" style="--d:2.8s"><b>관련</b> [[복직 지원]] [[단축근무]]</span>
+        <span class="ln" style="--d:3.4s"><b>근거</b> 취업규칙 휴직 조항 · 공지</span>
+        <span class="ln" style="--d:4s"><b>담당</b> 제도 담당자 검수</span>
+        <span class="stamp">검수 완료</span>
+      </div>
+    </div>
+    <figcaption>원천 자료(고치지 않음) → AI가 정리(컴파일) → 위키 페이지(AI가 쓰고, 사람이 검수). 페이지 양식·인용 방식·공개 범위 같은 작성 규칙은 '스키마'로 미리 정해 둡니다.</figcaption>
+  </figure>
+
+  <h3>위키는 세 가지 동작으로 굴러갑니다</h3>
+  <figure class="reveal">
+    <svg viewBox="0 0 360 200" role="img" aria-label="수집, 질의, 점검이 원을 그리며 반복되는 그림">
+      <g font-family="Noto Sans KR, sans-serif" text-anchor="middle">
+        <path id="cyc" d="M180 30 A70 70 0 1 1 179.9 30" fill="none" stroke="var(--line)" stroke-width="3"/>
+        <path d="M180 30 A70 70 0 1 1 179.9 30" fill="none" stroke="var(--wiki)" stroke-width="3" pathLength="1" class="draw"/>
+        <circle r="6" fill="var(--wiki)" class="smil-dot"><animateMotion dur="5s" repeatCount="indefinite"><mpath href="#cyc"/></animateMotion></circle>
+        <g class="pop" style="--d:.3s"><rect x="128" y="8" width="104" height="44" rx="10" fill="var(--surface)" stroke="var(--wiki)"/><text x="180" y="26" font-size="12" font-weight="700" fill="var(--wiki)">INGEST · 수집</text><text x="180" y="42" font-size="10.5" fill="var(--ink)">새 문서 → 여러 페이지 갱신</text></g>
+        <g class="pop" style="--d:.6s"><rect x="244" y="128" width="112" height="44" rx="10" fill="var(--surface)" stroke="var(--wiki)"/><text x="300" y="146" font-size="12" font-weight="700" fill="var(--wiki)">QUERY · 질의</text><text x="300" y="162" font-size="10.5" fill="var(--ink)">목차 보고 읽어 답하기</text></g>
+        <g class="pop" style="--d:.9s"><rect x="4" y="128" width="112" height="44" rx="10" fill="var(--surface)" stroke="var(--wiki)"/><text x="60" y="146" font-size="12" font-weight="700" fill="var(--wiki)">LINT · 점검</text><text x="60" y="162" font-size="10.5" fill="var(--ink)">모순·낡은 내용 고치기</text></g>
+        <text x="180" y="104" font-size="12" fill="var(--muted)">좋은 답은</text><text x="180" y="120" font-size="12" fill="var(--muted)">다시 페이지로 저장</text>
+      </g>
+    </svg>
+    <figcaption>목차(index.md)로 전체를 훑고, 변경 일지(log.md)에 언제 무엇을 고쳤는지 남깁니다.</figcaption>
+  </figure>
+
+  <p class="hint">새 공지가 들어오면 어떻게 될까요? 버튼을 눌러 보세요.</p>
+  <div class="btns"><button class="btn" id="wbtn" aria-pressed="false">새 인사 공지 도착 ▶</button></div>
+  <div class="card" style="margin-top:6px">
+    <div class="notice" id="wnotice"><span class="tag claim">NEW</span><span><b>인사 공지</b> — 육아휴직 관련 기준 개정</span></div>
+    <div class="pages">
+      <span class="chip" data-i="0">육아휴직.md<span class="st"></span></span>
+      <span class="chip" data-i="1">복직 지원.md<span class="st"></span></span>
+      <span class="chip" data-i="2">단축근무.md<span class="st"></span></span>
+      <span class="chip">학자금.md<span class="st"></span></span>
+    </div>
+    <p class="note" id="wmsg" style="margin:10px 0 0">관련 페이지만 골라 AI가 수정안을 쓰고, 담당자가 승인하면 반영됩니다.</p>
+  </div>
+
+  <div class="proscons">
+    <div class="card"><b class="m-wiki">강점</b><p>같은 질문에 늘 같은 답. 사람이 읽고 검수할 수 있는 '정답 노트'가 남음</p></div>
+    <div class="card"><b style="color:var(--risk)">약점</b><p>잘못 정리된 내용이 여러 답에 퍼질 위험, 검수 인력 필요, 페이지가 많아지면 검색 보완 필요. 2026년에 제안된 초기 방식</p></div>
+  </div>
+
+  <!-- 06 -->
+  <h2><span class="num">06</span>세 방식, 한눈에 비교</h2>
+  <p>한 줄로 줄이면 <b class="m-rag">RAG는 빠른 시작</b>, <b class="m-graph">GraphRAG는 관계 분석</b>, <b class="m-wiki">LLM Wiki는 답의 일관성</b>에 강합니다.</p>
+  <p class="hint">질문 유형을 고르면 가장 잘 맞는 방식이 떠오릅니다.</p>
+  <div class="btns" id="pbtns">
+    <button class="btn" data-best="rag" aria-pressed="false">특정 조항·사실 확인</button>
+    <button class="btn" data-best="graph" aria-pressed="false">여러 문서를 잇는 질문</button>
+    <button class="btn" data-best="graph" aria-pressed="false">전체 흐름 요약</button>
+    <button class="btn" data-best="wiki" aria-pressed="false">자주 묻는 제도 안내</button>
+  </div>
+  <div class="grid3 pick reveal" id="pick">
+    <div class="card bd-rag" data-m="rag">
+      <span class="tagline m-rag">RAG · 오픈북</span>
+      <p style="margin-top:6px">질문마다 비슷한 문서 조각을 찾아 읽음</p>
+      <div class="meter"><span>구축 난이도</span><span class="track"><span class="fill" style="--v:33%;background:var(--rag)"></span></span>
+        <span>최신 반영</span><span class="track"><span class="fill" style="--v:100%;background:var(--rag)"></span></span>
+        <span>기술 성숙도</span><span class="track"><span class="fill" style="--v:100%;background:var(--rag)"></span></span></div>
+    </div>
+    <div class="card bd-graph" data-m="graph">
+      <span class="tagline m-graph">GraphRAG · 노선도</span>
+      <p style="margin-top:6px">개체·관계 지도를 따라 탐색</p>
+      <div class="meter"><span>구축 난이도</span><span class="track"><span class="fill" style="--v:100%;background:var(--graph)"></span></span>
+        <span>최신 반영</span><span class="track"><span class="fill" style="--v:33%;background:var(--graph)"></span></span>
+        <span>기술 성숙도</span><span class="track"><span class="fill" style="--v:66%;background:var(--graph)"></span></span></div>
+    </div>
+    <div class="card bd-wiki" data-m="wiki">
+      <span class="tagline m-wiki">LLM Wiki · 정리 노트</span>
+      <p style="margin-top:6px">미리 정리한 페이지를 읽음</p>
+      <div class="meter"><span>구축 난이도</span><span class="track"><span class="fill" style="--v:66%;background:var(--wiki)"></span></span>
+        <span>최신 반영</span><span class="track"><span class="fill" style="--v:66%;background:var(--wiki)"></span></span>
+        <span>기술 성숙도</span><span class="track"><span class="fill" style="--v:33%;background:var(--wiki)"></span></span></div>
+    </div>
+  </div>
+  <div class="scroll"><table>
+    <thead><tr><th></th><th class="m-rag">RAG</th><th class="m-graph">GraphRAG</th><th class="m-wiki">LLM Wiki</th></tr></thead>
+    <tbody>
+      <tr><th>장점</th><td>빠른 구축, 새 문서 즉시 반영, 검증된 기술</td><td>관계·맥락 추론, 전체 요약형 질문에 강함</td><td>답이 일관되고, 사람이 읽고 검수 가능</td></tr>
+      <tr><th>단점</th><td>조각난 문맥, 여러 문서 종합에 약함, 개정 전후 혼재</td><td>구축비 큼, 추출 오류, 갱신 부담</td><td>오류 전파 위험, 검수 인력 필요</td></tr>
+      <tr><th>최신 반영</th><td>문서 교체 즉시</td><td>그래프·요약 재생성</td><td>관련 페이지 갱신 + 검수</td></tr>
+    </tbody>
+  </table></div>
+  <p class="note">막대는 세 방식의 상대 비교(3단계)입니다.</p>
+
+  <!-- 07 -->
+  <h2><span class="num">07</span>비용은 '만드는 비용'과 '사람의 시간'에서 갈린다</h2>
+  <p>AI 연산비보다 <b>데이터를 정비하고 검수하는 사람의 시간</b>이 총비용을 좌우하는 경우가 많습니다.</p>
+  <figure class="reveal">
+    <div class="cost">
+      <div class="row"><b>초기 구축</b><div class="bars">
+        <div class="b">RAG<span style="--v:2;background:var(--rag)"></span></div>
+        <div class="b">GraphRAG<span style="--v:5;background:var(--graph)"></span></div>
+        <div class="b">LLM Wiki<span style="--v:3;background:var(--wiki)"></span></div></div></div>
+      <div class="row"><b>규정이 바뀔 때 갱신</b><div class="bars">
+        <div class="b">RAG<span style="--v:1;background:var(--rag)"></span></div>
+        <div class="b">GraphRAG<span style="--v:4;background:var(--graph)"></span></div>
+        <div class="b">LLM Wiki<span style="--v:2;background:var(--wiki)"></span></div></div></div>
+      <div class="row"><b>인프라(저장·연산)</b><div class="bars">
+        <div class="b">RAG<span style="--v:2;background:var(--rag)"></span></div>
+        <div class="b">GraphRAG<span style="--v:4;background:var(--graph)"></span></div>
+        <div class="b">LLM Wiki<span style="--v:1;background:var(--wiki)"></span></div></div></div>
+      <div class="row"><b>사람의 검수·운영</b><div class="bars">
+        <div class="b">RAG<span style="--v:2;background:var(--rag)"></span></div>
+        <div class="b">GraphRAG<span style="--v:4;background:var(--graph)"></span></div>
+        <div class="b">LLM Wiki<span style="--v:4;background:var(--wiki)"></span></div></div></div>
+    </div>
+    <figcaption>5단계 상대 비교. 공개 자료와 일반적인 구축 사례를 바탕으로 한 정성 추정이며, 실제 비용은 문서량·모델·인프라에 따라 달라집니다.</figcaption>
+  </figure>
+
+  <div class="grid3 reveal">
+    <div class="card"><div class="big"><span class="count" data-to="0.1" data-dec="1">0</span>%</div><p>Microsoft의 경량형 <b>LazyGraphRAG</b> 색인 비용은 벡터 RAG와 같은 수준으로, 정식 GraphRAG의 0.1%라고 발표됐습니다.<sup>[3]</sup> 거꾸로 말하면 정식 GraphRAG 색인에는 벡터 RAG의 약 1,000배 연산이 든다는 뜻입니다.</p></div>
+    <div class="card"><div class="big" style="color:var(--wiki)"><span class="count" data-to="100">0</span>시간</div><p>핵심 제도 위키 200페이지를 1페이지당 30분씩 검수한다고 가정하면 약 100시간. 담당자 25명이 나누면 1인 4시간이고, 이후에는 바뀐 페이지만 봅니다. <small>(계산 예시)</small></p></div>
+    <div class="card"><div class="big" style="color:var(--accent);font-size:26px">토큰비 → GPU 시간</div><p>회사 안에 LLM을 직접 둔다면 비용은 '토큰 요금'이 아니라 'GPU 사용 시간'입니다. 위키 정리나 그래프 색인은 밤사이 일괄 처리로 돌리고 서버 용량 계획에 넣어 둡니다.</p></div>
+  </div>
+
+  <!-- 08 -->
+  <h2><span class="num">08</span>HR에 적용한다면 — 질문마다 다른 창구로</h2>
+  <p>HR에 들어오는 질문은 성격이 제각각입니다. 모든 질문을 RAG 하나로 풀려고 하면 <b>정확도와 보안을 함께 놓칩니다.</b></p>
+
+  <div class="analogy">
+    <span class="label">비유 — 은행 창구</span>
+    <p>은행에 가면 상품 안내 데스크, 본인 확인 후 내 계좌를 보는 창구, 상담실이 따로 있습니다. "적금 금리가 얼마예요?"와 "제 잔액이 얼마예요?"는 같은 질문처럼 보여도 처리하는 곳이 다릅니다. HR 챗봇도 같습니다. <b>제도 안내는 정리된 지식으로, 내 정보는 신분 확인 후 인사 시스템에서, 민감한 판단은 사람에게</b> 보냅니다.</p>
+  </div>
+
+  <p class="hint">질문을 눌러 보세요. 의도를 파악해 알맞은 창구로 보냅니다.</p>
+  <div class="btns" id="rbtns">
+    <button class="btn" data-l="0" data-why="제도·규정 안내 질문입니다. 검수된 위키 페이지를 먼저 보고, 없으면 원문을 검색해 출처와 함께 답합니다." aria-pressed="false">배우자 출산휴가는 며칠?</button>
+    <button class="btn" data-l="1" data-why="'내' 정보 질문입니다. 문서 검색이 아니라 본인 확인 후 인사 시스템에서 직접 조회합니다. AI는 결과 문장만 다듬습니다." aria-pressed="false">제 연차 며칠 남았나요?</button>
+    <button class="btn" data-l="2" data-why="분석·관계 질문입니다. 정형 인사 데이터 분석과 조직·직무·제도 관계 탐색이 필요해, 권한이 있는 HR 담당자용 플랫폼에서 다룹니다." aria-pressed="false">이 제도를 바꾸면 영향받는 조직은?</button>
+    <button class="btn" data-l="3" data-why="평가·징계·고충 같은 개별 판단은 AI가 답하지 않습니다. 담당자에게 상담을 연결합니다." aria-pressed="false">제 평가 결과가 부당한 것 같아요</button>
+  </div>
+  <div class="lanes" id="lanes">
+    <div class="lane"><span class="track"><span class="pkt"></span></span><h4>A. 제도·규정 안내 → <span class="m-wiki">검수된 위키</span> 먼저, 없으면 <span class="m-rag">RAG</span></h4><p>위키에 없는 답에는 '검수 전' 표시</p></div>
+    <div class="lane"><span class="track"><span class="pkt"></span></span><h4>B. 내 정보 조회·신청 → 인사 시스템 연동(API)</h4><p>본인 확인 후 조회 · RAG로 풀지 않음 · 조회 결과는 기록에 남기지 않음</p></div>
+    <div class="lane"><span class="track"><span class="pkt"></span></span><h4>C. 분석·관계 → 통합 인사 DB + <span class="m-graph">GraphRAG</span></h4><p>HR 담당자 전용 · 지표 정의와 검증된 쿼리 우선</p></div>
+    <div class="lane"><span class="track"><span class="pkt"></span></span><h4>D. 민감·판단 → 사람에게 연결</h4><p>AI는 개별 판단을 하지 않고 상담 접수로 이관</p></div>
+  </div>
+  <div class="routed" id="rmsg" aria-live="polite"></div>
+
+  <h3>하나를 고르는 게 아니라, 층을 쌓는다</h3>
+  <p>건물을 지을 때 기초 공사부터 하듯, 지식 아키텍처도 아래층부터 쌓습니다. 위층으로 갈수록 미리 정리하는 수고가 크고 효과도 큽니다.</p>
+  <figure class="reveal">
+    <div class="stack">
+      <div class="layer" style="--d:.9s"><span class="lv" style="background:var(--graph)">L4</span><div><b>관계 · GraphRAG (선택)</b><span>조직·직무·제도 관계 분석. 수요를 확인한 뒤 경량형부터</span></div></div>
+      <div class="layer" style="--d:.6s"><span class="lv" style="background:var(--wiki)">L3</span><div><b>정답 · HR LLM Wiki</b><span>제도별 '검수된 정답 노트' — 챗봇 답변의 1순위</span></div></div>
+      <div class="layer" style="--d:.3s"><span class="lv" style="background:var(--rag)">L2</span><div><b>검색 · RAG (하이브리드 검색)</b><span>원문 근거를 찾아 함께 제시</span></div></div>
+      <div class="layer" style="--d:0s"><span class="lv" style="background:var(--muted)">L1</span><div><b>기반 · 통합 인사 DB + 벡터DB</b><span>인사 데이터와 규정·문서를 AI가 쓸 수 있는 형태로</span></div></div>
+    </div>
+  </figure>
+
+  <h3>답하지 못한 질문이 다음 정답이 된다</h3>
+  <figure class="reveal">
+    <svg viewBox="0 0 360 210" role="img" aria-label="못 답한 질문이 위키 작성 목록이 되고, 검수 후 정답 페이지가 되어 정답률이 오르는 순환">
+      <g font-family="Noto Sans KR, sans-serif" text-anchor="middle">
+        <path id="loop" d="M180 30 A75 75 0 1 1 179.9 30" fill="none" stroke="var(--line)" stroke-width="3"/>
+        <circle r="6" fill="var(--accent)" class="smil-dot"><animateMotion dur="6s" repeatCount="indefinite"><mpath href="#loop"/></animateMotion></circle>
+        <g class="pop" style="--d:.2s"><rect x="120" y="10" width="120" height="38" rx="10" fill="var(--surface)" stroke="var(--risk)"/><text x="180" y="34" font-size="12" fill="var(--ink)">챗봇이 못 답한 질문</text></g>
+        <g class="pop" style="--d:.5s"><rect x="250" y="86" width="106" height="38" rx="10" fill="var(--surface)" stroke="var(--warn)"/><text x="303" y="110" font-size="12" fill="var(--ink)">위키 작성 목록</text></g>
+        <g class="pop" style="--d:.8s"><rect x="120" y="162" width="120" height="38" rx="10" fill="var(--surface)" stroke="var(--wiki)"/><text x="180" y="186" font-size="12" fill="var(--ink)">담당자 검수·승인</text></g>
+        <g class="pop" style="--d:1.1s"><rect x="4" y="86" width="106" height="38" rx="10" fill="var(--surface)" stroke="var(--accent)"/><text x="57" y="110" font-size="12" fill="var(--ink)">정답 페이지 증가</text></g>
+        <text x="180" y="100" font-size="13" font-weight="700" fill="var(--accent)">정답률 ↑</text>
+        <text x="180" y="118" font-size="11" fill="var(--muted)">페이지가 늘수록</text>
+      </g>
+    </svg>
+    <figcaption>HR 담당자는 AI의 사용자이면서 동시에 지식의 편집자입니다. 규정이 개정되면 AI가 관련 페이지 수정안을 쓰고, 담당자가 승인하면 모든 직원이 같은 답을 받습니다.</figcaption>
+  </figure>
+
+  <h3>운영 원칙 네 가지</h3>
+  <div class="grid3" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr))">
+    <div class="card"><h4>공개 지식만</h4><p>담당자용 내부 지침과 개인 정보는 전 직원 챗봇 지식에서 분리</p></div>
+    <div class="card"><h4>모든 답에 출처</h4><p>근거 페이지와 원문 링크를 함께 표시</p></div>
+    <div class="card"><h4>지어내지 않기</h4><p>근거가 없으면 '모름' + 담당 부서 안내</p></div>
+    <div class="card"><h4>개인 데이터 저장 금지</h4><p>조회 결과는 기록에서 가림 처리</p></div>
+  </div>
+
+  <!-- 09 -->
+  <h2><span class="num">09</span>한계 · 오해 · 논쟁</h2>
+  <div class="scroll"><table>
+    <thead><tr><th>쟁점</th><th>내용</th><th>근거 수준</th></tr></thead>
+    <tbody>
+      <tr><td>"GraphRAG가 RAG보다 무조건 낫다"</td><td>전체 조망형 질문에서 더 포괄적인 답을 낸다는 연구가 있지만<sup>[2]</sup>, 특정 사실 확인에는 RAG로 충분하고 구축비는 훨씬 큽니다. 질문 유형에 따라 다릅니다.</td><td><span class="tag fact">확인된 사실</span></td></tr>
+      <tr><td>경량형 GraphRAG의 비용</td><td>LazyGraphRAG 색인비가 벡터 RAG와 같고 정식 GraphRAG의 0.1%라는 수치는 개발사(Microsoft)의 발표입니다.<sup>[3]</sup></td><td><span class="tag claim">주장·발표</span></td></tr>
+      <tr><td>LLM Wiki의 성숙도</td><td>2026년 4월에 제안된 패턴으로, 큰 조직에서 장기간 운영한 공개 사례는 아직 적습니다. 잘못 정리된 내용이 여러 답에 퍼질 위험이 있어 사람의 검수 단계가 필요합니다.<sup>[4]</sup></td><td><span class="tag claim">주장·발표</span></td></tr>
+      <tr><td>"재학습(파인튜닝)으로 외우게 하면 된다"</td><td>자주 바뀌는 규정에는 갱신 비용이 크고 출처를 보여 줄 수 없어 맞지 않는다는 것이 일반적인 판단입니다. 말투나 형식을 맞추는 용도와는 구분해야 합니다.</td><td><span class="tag claim">주장·발표</span></td></tr>
+      <tr><td>위키 검수 공수 100시간</td><td>200페이지 × 30분이라는 가정으로 계산한 예시입니다. 제도 수와 문서 상태에 따라 크게 달라집니다.</td><td><span class="tag guess">추정</span></td></tr>
+    </tbody>
+  </table></div>
+
+  <!-- 10 -->
+  <h2><span class="num">10</span>일과 실무에 주는 의미</h2>
+  <div class="grid3">
+    <div class="card bd-rag"><h4>지금 해볼 것</h4><p>자주 묻는 HR 질문 상위 목록 만들기. 문서마다 시행일·공개 범위·담당자 같은 꼬리표(메타데이터) 붙이기. 질문과 정답 묶음(평가셋)을 작게라도 만들어 두기.</p></div>
+    <div class="card bd-graph"><h4>아직 기다릴 것</h4><p>정식 GraphRAG 전면 구축. 분석 수요가 분명해지면 경량형으로 작게 시험(PoC)해 보고 결정해도 늦지 않습니다.</p></div>
+    <div class="card bd-wiki"><h4>준비할 것</h4><p>기술보다 먼저 <b>'지식의 주인'</b>을 정하기. 제도별로 누가 페이지를 검수·승인할지, 개인정보는 어디까지 AI가 다룰지 원칙을 세우기.</p></div>
+  </div>
+
+  <!-- 11 -->
+  <h2><span class="num">11</span>앞으로 지켜볼 신호</h2>
+  <ul>
+    <li><b>LLM Wiki를 기업 규모로 운영한 사례</b> — 검수 체계와 오류 관리 방법이 공개되면 도입 판단이 쉬워집니다.</li>
+    <li><b>경량형 GraphRAG의 확산</b> — 구축비가 RAG 수준으로 내려오면 '선택'이던 4층이 기본이 될 수 있습니다.</li>
+    <li><b>사내 LLM의 GPU 비용</b> — 미리 정리하는 방식(위키·그래프)은 야간 일괄 처리 비용과 직결됩니다.</li>
+    <li><b>평가 지표</b> — 정답률, 출처 제시율, 단순 문의 감소율, 담당자 이관률처럼 "좋아졌는지"를 재는 기준이 있어야 방식을 비교할 수 있습니다.</li>
+  </ul>
+
+  <!-- 12 -->
+  <h2><span class="num">12</span>용어집</h2>
+  <dl class="glossary">
+    <dt>LLM (대형 언어 모델)</dt><dd>엄청난 양의 글을 학습해 문장을 이해하고 만들어 내는 AI. ChatGPT, Claude 등.</dd>
+    <dt>환각</dt><dd>AI가 모르는 내용을 그럴듯하게 지어내는 현상.</dd>
+    <dt>RAG (검색 증강 생성)</dt><dd>질문과 관련된 문서를 먼저 찾아 AI에게 건네고, 그걸 읽고 답하게 하는 방식.</dd>
+    <dt>청크 (Chunk)</dt><dd>검색하기 좋게 잘라 낸 문서 조각. 보통 수백 자 단위.</dd>
+    <dt>임베딩</dt><dd>글의 뜻을 숫자 좌표로 바꾸는 일. 뜻이 비슷하면 좌표도 가깝다.</dd>
+    <dt>벡터DB</dt><dd>임베딩 좌표를 저장해 두고, 가까운 것을 빠르게 찾아 주는 데이터베이스.</dd>
+    <dt>하이브리드 검색</dt><dd>뜻으로 찾는 벡터 검색과 글자 그대로 찾는 키워드 검색을 함께 쓰는 것.</dd>
+    <dt>재정렬 (Re-ranking)</dt><dd>1차로 뽑은 후보를 더 정밀한 모델로 다시 줄 세우는 단계.</dd>
+    <dt>지식 그래프</dt><dd>개체(사람·조직·제도)를 점으로, 관계를 선으로 이은 지도.</dd>
+    <dt>커뮤니티 요약</dt><dd>그래프에서 서로 가깝게 엮인 개체 묶음마다 미리 써 둔 요약문.</dd>
+    <dt>LLM Wiki</dt><dd>AI가 원자료를 읽고 주제별 위키 페이지로 정리해 두고 계속 고쳐 쓰는 방식.</dd>
+    <dt>스키마</dt><dd>위키 페이지의 양식·인용 방식·공개 범위 같은 작성 규칙.</dd>
+    <dt>파인튜닝</dt><dd>AI 모델을 추가로 학습시켜 특정 지식이나 말투를 몸에 익히게 하는 것.</dd>
+    <dt>API</dt><dd>시스템끼리 정해진 방식으로 데이터를 주고받는 연결 통로.</dd>
+  </dl>
+
+  <!-- 13 -->
+  <h2><span class="num">13</span>출처</h2>
+  <ol class="src">
+    <li><a href="https://arxiv.org/abs/2005.11401">Lewis et al. — Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks</a> (arXiv, 2020)</li>
+    <li><a href="https://arxiv.org/abs/2404.16130">Edge et al. (Microsoft) — From Local to Global: A Graph RAG Approach to Query-Focused Summarization</a> (arXiv, 2024.4 / 개정 2025.2)</li>
+    <li><a href="https://www.microsoft.com/en-us/research/blog/lazygraphrag-setting-a-new-standard-for-quality-and-cost/">Microsoft Research Blog — LazyGraphRAG: Setting a new standard for quality and cost</a> (2024.11)</li>
+    <li><a href="https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f">Andrej Karpathy — LLM Wiki (GitHub Gist)</a> (2026.4)</li>
+    <li>HR AI 지식 아키텍처 검토 자료 (비공개 내부 자료를 바탕으로, 회사 고유 정보를 빼고 일반화해 정리)</li>
+  </ol>
+
+  <footer>AI Field Notes · Note No.01 · 2026-11-24 발행 · 그래프·질문·문서 이름은 원리를 보여 주기 위한 예시이며, 수치는 기준 시점의 공개 자료입니다. 근거 수준은 09의 표로 구분했습니다.</footer>
+</div>
+
+<script>
+(function () {
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduce) document.querySelectorAll('svg').forEach(s => s.pauseAnimations && s.pauseAnimations());
+
+  // 화면에 들어오면 재생
+  const io = 'IntersectionObserver' in window ? new IntersectionObserver(es => {
+    es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); runCounters(e.target); io.unobserve(e.target); } });
+  }, { threshold: 0.25 }) : null;
+  document.querySelectorAll('.reveal').forEach(el => io ? io.observe(el) : el.classList.add('in'));
+  const gsvg = document.getElementById('gsvg');
+  if (io) io.observe(gsvg); else gsvg.classList.add('in');
+
+  function runCounters(root) {
+    root.querySelectorAll('.count').forEach(c => {
+      const to = parseFloat(c.dataset.to), dec = +(c.dataset.dec || 0), t0 = performance.now(), dur = reduce ? 1 : 1400;
+      (function step(t) { const p = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - p, 3);
+        c.textContent = (to * e).toFixed(dec); if (p < 1) requestAnimationFrame(step); })(t0);
+    });
+  }
+
+  function press(group, btn) { group.querySelectorAll('.btn').forEach(b => b.setAttribute('aria-pressed', String(b === btn))); }
+  const esc = s => s.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+
+  // 03 벡터 지도
+  const NS = 'http://www.w3.org/2000/svg';
+  const P = [
+    [60,60,'연차 사용 기준'],[95,50,'배우자 출산휴가 일수'],[120,85,'육아휴직 신청 대상'],[100,110,'육아휴직 기간'],[65,100,'복직 절차'],[45,80,'경조 휴가'],[35,55,'올해 개정: 보육 지원금',1],
+    [290,55,'급여 지급일'],[235,95,'휴직 기간 급여 기준'],[305,90,'수당 종류'],[275,115,'성과급 지급 기준'],[215,70,'육아휴직 급여 FAQ'],[260,45,'올해 개정: 가족 수당',1],
+    [70,210,'평가 일정'],[105,235,'승진 심사 기준'],[125,205,'승진 소요 연수'],[60,250,'다면 평가 안내'],[95,270,'이의 신청 절차'],
+    [250,205,'학자금 지원 대상'],[290,215,'의료비 지원'],[265,245,'복지 포인트'],[305,250,'건강검진 안내'],[235,265,'동호회 지원'],[285,190,'올해 개정: 복지 포인트 한도',1],[315,225,'올해 개정: 의료비 범위',1]
+  ];
+  const Q = [
+    { x:180, y:90, note:'세 조각을 읽고 출처와 함께 답합니다. 한 주제 안의 질문이라 잘 맞습니다.' },
+    { x:100, y:40, note:'가장 가까운 조각에 정답이 그대로 있습니다. RAG가 가장 잘하는 질문입니다.' },
+    { x:110, y:225, note:'평가·승진 코너에서 바로 찾았습니다.' },
+    { x:288, y:208, note:'', all:true }
+  ];
+  const dots = document.getElementById('vdots'), lines = document.getElementById('vlines'), vq = document.getElementById('vq'), vans = document.getElementById('vans');
+  const els = P.map(p => { const c = document.createElementNS(NS, 'circle'); c.setAttribute('cx', p[0]); c.setAttribute('cy', p[1]); c.setAttribute('r', 5); c.setAttribute('class', 'dot');
+    const t = document.createElementNS(NS, 'title'); t.textContent = p[2]; c.appendChild(t); dots.appendChild(c); return c; });
+  const rings = P.map(p => { if (!p[3]) return null; const r = document.createElementNS(NS, 'circle'); r.setAttribute('cx', p[0]); r.setAttribute('cy', p[1]); r.setAttribute('r', 11); r.setAttribute('class', 'ring'); dots.appendChild(r); return r; });
+  document.getElementById('vbtns').addEventListener('click', e => {
+    const b = e.target.closest('.btn'); if (!b) return; press(e.currentTarget, b);
+    const q = Q[+b.dataset.q];
+    vq.style.opacity = 1; vq.style.transform = `translate(${q.x}px, ${q.y}px)`;
+    const near = P.map((p, i) => [Math.hypot(p[0] - q.x, p[1] - q.y), i]).sort((a, z) => a[0] - z[0]).slice(0, 3).map(d => d[1]);
+    els.forEach((el, i) => el.setAttribute('class', 'dot' + (near.includes(i) ? ' hit' : '')));
+    rings.forEach(r => r && r.setAttribute('class', 'ring'));
+    lines.innerHTML = '';
+    setTimeout(() => {
+      near.forEach((i, k) => { const l = document.createElementNS(NS, 'line'); l.setAttribute('x1', q.x); l.setAttribute('y1', q.y); l.setAttribute('x2', P[i][0]); l.setAttribute('y2', P[i][1]);
+        l.setAttribute('pathLength', 1); l.style.setProperty('--d', (k * .15) + 's'); lines.appendChild(l); });
+      let html = `<b class="m-rag">집어 온 조각 3개</b><ol>${near.map(i => `<li>${esc(P[i][2])}</li>`).join('')}</ol>`;
+      if (q.all) {
+        const missed = P.map((p, i) => i).filter(i => P[i][3] && !near.includes(i));
+        missed.forEach(i => { els[i].setAttribute('class', 'dot miss'); rings[i].setAttribute('class', 'ring on'); });
+        html += `<span class="warn">놓친 개정 내용 ${missed.length}건:</span> ${missed.map(i => esc(P[i][2].replace('올해 개정: ', ''))).join(', ')} — 다른 코너에 꽂혀 있어 '가까운 3개'에 들지 못했습니다. 게다가 집어 온 것 중 하나는 개정과 무관한 조각입니다.`;
+      } else html += `<span class="note">${q.note}</span>`;
+      vans.innerHTML = html;
+    }, reduce ? 0 : 700);
+  });
+
+  // 04 그래프 노선 따라가기
+  const gbtn = document.getElementById('gbtn'), gans = document.getElementById('gans'), gmove = document.getElementById('gmove');
+  gbtn.addEventListener('click', () => {
+    gsvg.classList.add('in'); gsvg.classList.remove('route'); gans.classList.remove('show'); void gsvg.getBoundingClientRect();
+    gsvg.classList.add('route'); gans.classList.add('show'); gbtn.setAttribute('aria-pressed', 'true');
+    try { gmove.beginElement(); } catch (e) {}
+  });
+
+  // 05 새 공지 → 페이지 갱신
+  const wbtn = document.getElementById('wbtn'), notice = document.getElementById('wnotice'), wmsg = document.getElementById('wmsg');
+  const chips = [...document.querySelectorAll('.chip[data-i]')];
+  wbtn.addEventListener('click', () => {
+    wbtn.setAttribute('aria-pressed', 'true');
+    notice.classList.remove('show'); chips.forEach(c => { c.className = 'chip'; c.querySelector('.st').textContent = ''; });
+    const T = reduce ? 0 : 1;
+    setTimeout(() => notice.classList.add('show'), 50);
+    chips.forEach((c, k) => setTimeout(() => { c.className = 'chip upd'; c.querySelector('.st').textContent = '수정안'; }, T * (700 + k * 350)));
+    setTimeout(() => wmsg.textContent = 'AI가 영향받는 페이지 3곳을 찾아 수정안을 썼습니다. 학자금.md는 관련이 없어 그대로입니다.', T * 1500);
+    chips.forEach((c, k) => setTimeout(() => { c.className = 'chip ok'; c.querySelector('.st').textContent = '검수 완료'; }, T * (2800 + k * 350)));
+    setTimeout(() => wmsg.textContent = '담당자가 승인하자마자 챗봇 답변에 반영됩니다. 모든 직원이 같은 답을 받습니다.', T * 3900);
+  });
+
+  // 06 질문 유형 → 방식
+  const pick = document.getElementById('pick');
+  document.getElementById('pbtns').addEventListener('click', e => {
+    const b = e.target.closest('.btn'); if (!b) return; press(e.currentTarget, b);
+    pick.classList.add('active', 'in');
+    pick.querySelectorAll('.card').forEach(c => c.classList.toggle('best', c.dataset.m === b.dataset.best));
+  });
+
+  // 08 질문 라우터
+  const lanes = [...document.querySelectorAll('.lane')], rmsg = document.getElementById('rmsg');
+  document.getElementById('rbtns').addEventListener('click', e => {
+    const b = e.target.closest('.btn'); if (!b) return; press(e.currentTarget, b);
+    lanes.forEach(l => l.classList.remove('on')); void document.body.offsetWidth;
+    lanes[+b.dataset.l].classList.add('on');
+    rmsg.textContent = b.dataset.why;
+  });
+})();
+</script>
+</body>
+</html>
